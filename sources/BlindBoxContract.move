@@ -78,6 +78,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_EXTENSION_VALUE: u64 = 36;
     const EINVALID_EXTENSION_TABLE: u64 = 37;
     const EINVALID_TYPE: u64 = 38;
+    const EINVALID_COIN_TYPE: u64 = 39;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -424,6 +425,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       keys_collection_description: vector<u8>,
       keys_collection_url: vector<u8>,
     ) acquires Lootboxes {
+
+    if(type_info::type_name<CoinType>() != "0x1::supra_coin::SupraCoin") {
+        assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+    };
+
       let account_addr = signer::address_of(source_account);
       let fresh_account = false;
 
@@ -893,6 +899,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator_addr: address,
         collection_name: vector<u8>,
       ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
+
+        // Check if coin type is SupraCoin
+        if(type_info::type_name<CoinType>() != "0x1::supra_coin::SupraCoin") {
+            assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+        };
+
+
         let buyer_addr = signer::address_of(buyer);
         let collection_name_str = string::utf8(collection_name);
 
@@ -1242,7 +1255,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         new_price: u64
     ) acquires Lootboxes, FixedPriceListing {
+
+        if(type_info::type_name<CoinType>() != "0x1::supra_coin::SupraCoin") {
+            assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+        };
+
+        // Get creator address
         let creator_addr = signer::address_of(creator);
+        // Get collection name
         let collection_name_str = string::utf8(collection_name);
 
         // Get the lootbox
