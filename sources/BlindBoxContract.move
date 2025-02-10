@@ -815,6 +815,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 lootbox.collectionName,
                 token_name
             );
+            let maxSupplyReached = false;
             let curSupply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
             if(curSupply != option::none()) {
                 let maxSupply = token::get_tokendata_maximum(token_data_id);
@@ -822,12 +823,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     //curSupply is std::option::some(u64) so how to access the value?
                     let curSupplyValue = *option::borrow(&curSupply);
                     if(curSupplyValue >= maxSupply) {
-                        continue
+                        maxSupplyReached = true;
                     };
                 };
             };
-
-            vector::push_back(&mut tokens_of_rarity, token_name);
+            if(!maxSupplyReached) {
+                vector::push_back(&mut tokens_of_rarity, token_name);
+            };
           };
           
 
