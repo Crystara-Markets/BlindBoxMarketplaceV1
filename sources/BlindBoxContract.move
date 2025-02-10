@@ -37,7 +37,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V17";
     const CALLBACK_MODULE_NAME: vector<u8> = b"BlindBoxContract_Crystara_TestV17";
 
-    const SUPRA_COIN_TYPE: String = string::utf8(b"0x1::supra_coin::SupraCoin");
+    const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
     /// Error Codes
     /// Action not authorized because the signer is not the admin of this module
