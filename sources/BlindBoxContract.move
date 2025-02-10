@@ -787,7 +787,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     creator: address,
     rarity: vector<u8>
   ): vector<String> acquires Lootboxes {
-    b"DEPRECATED"
+    string::utf8(b"DEPRECATED")
   }
 
   // Helper function to get all tokens of a specific rarity
