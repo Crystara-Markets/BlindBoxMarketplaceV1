@@ -1290,7 +1290,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator: address,
         collection_name: String,
         random_num: u256
-    ): vector<String> acquires Lootboxes {
+    ): String acquires Lootboxes {
         let lootboxes = borrow_global<Lootboxes>(creator);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
 
