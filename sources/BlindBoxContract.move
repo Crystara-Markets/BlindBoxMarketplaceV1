@@ -37,6 +37,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V17";
     const CALLBACK_MODULE_NAME: vector<u8> = b"BlindBoxContract_Crystara_TestV17";
 
+    const SUPRA_COIN_TYPE = string::utf8(b"0x1::supra_coin::SupraCoin");
+
     /// Error Codes
     /// Action not authorized because the signer is not the admin of this module
     const ENOT_AUTHORIZED: u64 = 1;
@@ -426,7 +428,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       keys_collection_url: vector<u8>,
     ) acquires Lootboxes {
 
-    if(type_info::type_name<CoinType>() != "0x1::supra_coin::SupraCoin") {
+    if(type_info::type_name<CoinType>() != SUPRA_COIN_TYPE) {
         assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
     };
 
@@ -901,7 +903,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
 
         // Check if coin type is SupraCoin
-        if(type_info::type_name<CoinType>() != "0x1::supra_coin::SupraCoin") {
+        if(type_info::type_name<CoinType>() != SUPRA_COIN_TYPE) {
             assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
         };
 
@@ -1256,7 +1258,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         new_price: u64
     ) acquires Lootboxes, FixedPriceListing {
 
-        if(type_info::type_name<CoinType>() != "0x1::supra_coin::SupraCoin") {
+        if(type_info::type_name<CoinType>() != SUPRA_COIN_TYPE) {
             assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
         };
 
