@@ -771,7 +771,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     collection_name: vector<u8>,
     creator: address,
     rarity: vector<u8>
-  ) : vector<String> {
+  ) acquires Lootboxes {
     let collection_name_str = string::utf8(collection_name);
     let rarity_str = string::utf8(rarity);
 
