@@ -766,6 +766,22 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     string::utf8(digits)
   }
 
+  #[view]
+  public fun get_tokens_in_lootbox_by_rarity(
+    collection_name: vector<u8>,
+    creator: address,
+    rarity: vector<u8>
+  ) : vector<String> {
+    let collection_name_str = string::utf8(collection_name);
+    let rarity_str = string::utf8(rarity);
+
+    let lootboxes = borrow_global<Lootboxes>(creator);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
+
+    let tokens_in_rarity = get_tokens_by_rarity(lootbox, rarity_str);
+    tokens_in_rarity
+  }
+
   // Helper function to get all tokens of a specific rarity
   fun get_tokens_by_rarity(
       lootbox: &Lootbox,
