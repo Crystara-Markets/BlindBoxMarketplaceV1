@@ -81,6 +81,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_EXTENSION_TABLE: u64 = 37;
     const EINVALID_TYPE: u64 = 38;
     const EINVALID_COIN_TYPE: u64 = 39;
+    const EDEPRECATED: u64 = 40;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -767,19 +768,26 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
   }
 
   #[view]
-  public fun get_tokens_in_lootbox_by_rarity(
+  public fun view_get_lootbox_tokens_by_rarity(
+    creator: address,
+    collection_name: String,
+    rarity: String
+  ): vector<String> acquires Lootboxes {
+    let lootboxes = borrow_global<Lootboxes>(creator);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+    let tokens_in_rarity = get_tokens_by_rarity(lootbox, rarity);
+    tokens_in_rarity
+  }
+
+    //DEPRECATED
+  #[view]
+  public fun view_get_lootbox_tokens_by_rarity(
     collection_name: vector<u8>,
     creator: address,
     rarity: vector<u8>
   ): vector<String> acquires Lootboxes {
-    let collection_name_str = string::utf8(collection_name);
-    let rarity_str = string::utf8(rarity);
-
-    let lootboxes = borrow_global<Lootboxes>(creator);
-    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
-
-    let tokens_in_rarity = get_tokens_by_rarity(lootbox, rarity_str);
-    tokens_in_rarity
+    assert!(false, error::not_found(EDEPRECATED))
   }
 
   // Helper function to get all tokens of a specific rarity
