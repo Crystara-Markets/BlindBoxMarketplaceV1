@@ -1298,6 +1298,29 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         selected_rarity
     }
 
+    #[view]
+    public fun view_receivable_rarities(
+        creator: address,
+        collection_name: String,
+    ): vector<String> acquires Lootboxes {
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let rarities = lootbox.rarity_keys;
+        let receivable_list = vector::empty<String>();
+        let i = 0;
+        while (i < vector::length(&rarities)) {
+            let rarity = vector::borrow(&rarities, i);
+            let available_tokens = get_tokens_by_rarity(lootbox, *rarity);
+            if (vector::length(&available_tokens) > 0) {
+                vector::push_back(&mut receivable_list, *rarity);
+            };
+            i = i + 1;
+        };
+        receivable_list
+    }
+
+
     fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
