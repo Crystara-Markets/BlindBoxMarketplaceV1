@@ -774,7 +774,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     rarity: String
   ): vector<String> acquires Lootboxes {
     let lootboxes = borrow_global<Lootboxes>(creator);
-    let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
+    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
 
     let tokens_in_rarity = get_tokens_by_rarity(lootbox, rarity);
     tokens_in_rarity
@@ -788,7 +788,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     rarity: vector<u8>
   ): vector<String> acquires Lootboxes {
     let lootboxes = borrow_global<Lootboxes>(creator);
-    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
 
     let deprecated_vector = vector::empty<String>();
     vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
