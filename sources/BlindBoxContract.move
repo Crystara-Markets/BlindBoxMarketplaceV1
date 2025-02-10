@@ -83,6 +83,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_COIN_TYPE: u64 = 39;
     const EDEPRECATED: u64 = 40;
     const ENO_TOKENS_AVAILABLE: u64 = 41;
+    const ENO_RARITY_SELECTED: u64 = 42;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -1284,6 +1285,19 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         *vector::borrow(&lootbox.rarity_keys, len - 1)
     }*/
 
+    #[view]
+    public fun view_verify_selected_rarity(
+        creator: address,
+        collection_name: String,
+        random_num: u256
+    ): vector<String> acquires Lootboxes {
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let selected_rarity = select_rarity(lootbox, random_num);
+        selected_rarity
+    }
+
     fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
@@ -1341,7 +1355,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         if (string::length(&selected_rarity) == 0) {
-            selected_rarity = *vector::borrow(&lootbox.rarity_keys, len - 1);
+            assert!(false, error::not_found(ENO_RARITY_SELECTED));
         };
         
         // Check if selected rarity has available tokens
@@ -1351,14 +1365,17 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         // If no tokens in selected rarity, look for tokens in more common rarities
-        i = 0;
-        while (i < vector::length(&sorted_rarities)) {
+        i = vector::length(&sorted_rarities) - 1;
+        while (i >= 0) {
             let rarity = *vector::borrow(&sorted_rarities, i);
-            let available_tokens = get_tokens_by_rarity(lootbox, rarity);
-            if (vector::length(&available_tokens) > 0) {
-                return rarity
+            let weight = *vector::borrow(&sorted_weights, i);
+            if (weight > *table::borrow(rarities, selected_rarity)) {
+                let available_tokens = get_tokens_by_rarity(lootbox, rarity);
+                if (vector::length(&available_tokens) > 0) {
+                    return rarity
+                };
             };
-            i = i + 1;
+            i = i - 1;
         };
         
         // If no tokens found in any rarity, abort
