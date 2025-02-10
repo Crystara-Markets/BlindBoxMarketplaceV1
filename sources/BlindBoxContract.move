@@ -782,7 +782,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     //DEPRECATED
   #[view]
-  public fun view_get_lootbox_tokens_by_rarity(
+  public fun get_tokens_in_lootbox_by_rarity(
     collection_name: vector<u8>,
     creator: address,
     rarity: vector<u8>
