@@ -428,7 +428,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       keys_collection_url: vector<u8>,
     ) acquires Lootboxes {
 
-    if(type_info::type_name<CoinType>() != SUPRA_COIN_TYPE) {
+    if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
         assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
     };
 
@@ -903,7 +903,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
 
         // Check if coin type is SupraCoin
-        if(type_info::type_name<CoinType>() != SUPRA_COIN_TYPE) {
+        if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
             assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
         };
 
@@ -1258,7 +1258,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         new_price: u64
     ) acquires Lootboxes, FixedPriceListing {
 
-        if(type_info::type_name<CoinType>() != SUPRA_COIN_TYPE) {
+        if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
             assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
         };
 
