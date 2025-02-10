@@ -1247,7 +1247,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
     // Helper function to select rarity based on weights
-    fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
+    /*fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
         
@@ -1281,6 +1281,91 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Fallback to last rarity
         *vector::borrow(&lootbox.rarity_keys, len - 1)
+    }*/
+
+    //New select rarity version
+    fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
+        let total_weight = (0 as u256);
+        let rarities = &lootbox.rarities;
+        
+        let len = vector::length(&lootbox.rarity_keys);
+        assert!(len > 0, error::invalid_state(EINVALID_VECTOR_LENGTH));
+        
+        // Calculate total weight and store sorted rarities by weight (descending)
+        let i = 0;
+        let sorted_rarities = vector::empty<String>();
+        let sorted_weights = vector::empty<u64>();
+        
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let weight = *table::borrow(rarities, *rarity);
+            total_weight = total_weight + (weight as u256);
+            
+            // Insert into sorted vectors
+            let j = 0;
+            let inserted = false;
+            while (j < vector::length(&sorted_weights)) {
+                if (weight > *vector::borrow(&sorted_weights, j)) {
+                    vector::insert(&mut sorted_weights, weight, j);
+                    vector::insert(&mut sorted_rarities, *rarity, j);
+                    inserted = true;
+                    break
+                };
+                j = j + 1;
+            };
+            if (!inserted) {
+                vector::push_back(&mut sorted_weights, weight);
+                vector::push_back(&mut sorted_rarities, *rarity);
+            };
+            
+            i = i + 1;
+        };
+        
+        // Use random number to select initial rarity
+        let roll = random_num % total_weight;
+        let current_weight = (0 as u256);
+        
+        // Find initially selected rarity
+        i = 0;
+        let selected_rarity = string::utf8(b""); // Initialize with empty string
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let weight = *table::borrow(rarities, *rarity);
+            current_weight = current_weight + (weight as u256);
+            
+            if (roll < current_weight) {
+                selected_rarity = *rarity;
+                break
+            };
+            i = i + 1;
+        };
+        
+        if (string::length(&selected_rarity) == 0) {
+            selected_rarity = *vector::borrow(&lootbox.rarity_keys, len - 1);
+        };
+        
+        // Check if selected rarity has available tokens
+        let available_tokens = get_tokens_by_rarity(lootbox, selected_rarity);
+        if (vector::length(&available_tokens) > 0) {
+            return selected_rarity
+        };
+        
+        // If no tokens in selected rarity, look for tokens in more common rarities
+        i = vector::length(&sorted_rarities) - 1;
+        while (i >= 0) {
+            if(*vector::borrow(&sorted_weights, i) > *table::borrow(rarities, *selected_rarity)) {
+                let rarity = *vector::borrow(&sorted_rarities, i);
+                let available_tokens = get_tokens_by_rarity(lootbox, rarity);
+                if (vector::length(&available_tokens) > 0) {
+                    return rarity
+                };
+            };
+            i = i - 1;
+        };
+        
+        // If no tokens found in any rarity, abort
+        assert!(false, error::not_found(ENO_TOKENS_AVAILABLE));
+        selected_rarity // This line will never be reached due to the assert above
     }
 
     public entry fun set_lootbox_price<CoinType>(
