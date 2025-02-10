@@ -787,6 +787,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     creator: address,
     rarity: vector<u8>
   ): vector<String> acquires Lootboxes {
+    let lootboxes = borrow_global<Lootboxes>(creator);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
     let deprecated_vector = vector::empty<String>();
     vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
     deprecated_vector
@@ -819,7 +822,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     //curSupply is std::option::some(u64) so how to access the value?
                     let curSupplyValue = *option::borrow(&curSupply);
                     if(curSupplyValue >= maxSupply) {
-                        continue;
+                        continue
                     };
                 };
             };
