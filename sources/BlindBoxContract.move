@@ -788,7 +788,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     rarity: vector<u8>
   ): vector<String> acquires Lootboxes {
     let deprecated_vector = vector::empty<String>();
-    vector::push_back(&mut deprecated_vector, b"DEPRECATED");
+    vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
     deprecated_vector
   }
 
