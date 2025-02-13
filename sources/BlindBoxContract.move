@@ -40,6 +40,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V17";
     const CALLBACK_MODULE_NAME: vector<u8> = b"BlindBoxContract_Crystara_TestV17";
 
+    const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
+
     /// Error Codes
     /// Action not authorized because the signer is not the admin of this module
     const ENOT_AUTHORIZED: u64 = 1;
@@ -81,6 +83,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_EXTENSION_VALUE: u64 = 36;
     const EINVALID_EXTENSION_TABLE: u64 = 37;
     const EINVALID_TYPE: u64 = 38;
+    const EINVALID_COIN_TYPE: u64 = 39;
+    const EDEPRECATED: u64 = 40;
+    const ENO_TOKENS_AVAILABLE: u64 = 41;
+    const ENO_RARITY_SELECTED: u64 = 42;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -427,6 +433,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       keys_collection_description: vector<u8>,
       keys_collection_url: vector<u8>,
     ) acquires Lootboxes {
+
+    if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
+        assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+    };
+
       let account_addr = signer::address_of(source_account);
       let fresh_account = false;
 
@@ -761,6 +772,34 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     string::utf8(digits)
   }
 
+  #[view]
+  public fun view_get_lootbox_tokens_by_rarity(
+    creator: address,
+    collection_name: String,
+    rarity: String
+  ): vector<String> acquires Lootboxes {
+    let lootboxes = borrow_global<Lootboxes>(creator);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+    let tokens_in_rarity = get_tokens_by_rarity(lootbox, rarity);
+    tokens_in_rarity
+  }
+
+    //DEPRECATED
+  #[view]
+  public fun get_tokens_in_lootbox_by_rarity(
+    collection_name: vector<u8>,
+    creator: address,
+    rarity: vector<u8>
+  ): vector<String> acquires Lootboxes {
+    let lootboxes = borrow_global<Lootboxes>(creator);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
+
+    let deprecated_vector = vector::empty<String>();
+    vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
+    deprecated_vector
+  }
+
   // Helper function to get all tokens of a specific rarity
   fun get_tokens_by_rarity(
       lootbox: &Lootbox,
@@ -781,6 +820,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 lootbox.collectionName,
                 token_name
             );
+            let maxSupplyReached = false;
             let curSupply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
             if(curSupply != option::none()) {
                 let maxSupply = token::get_tokendata_maximum(token_data_id);
@@ -788,12 +828,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     //curSupply is std::option::some(u64) so how to access the value?
                     let curSupplyValue = *option::borrow(&curSupply);
                     if(curSupplyValue >= maxSupply) {
-                        continue;
+                        maxSupplyReached = true;
                     };
                 };
             };
-
-            vector::push_back(&mut tokens_of_rarity, token_name);
+            if(!maxSupplyReached) {
+                vector::push_back(&mut tokens_of_rarity, token_name);
+            };
           };
           
 
@@ -896,6 +937,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator_addr: address,
         collection_name: vector<u8>,
       ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
+
+        // Check if coin type is SupraCoin
+        if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
+            assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+        };
+
+
         let buyer_addr = signer::address_of(buyer);
         let collection_name_str = string::utf8(collection_name);
 
@@ -1204,7 +1252,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
     // Helper function to select rarity based on weights
-    fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
+    /*fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
         
@@ -1238,6 +1286,127 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Fallback to last rarity
         *vector::borrow(&lootbox.rarity_keys, len - 1)
+    }*/
+
+    #[view]
+    public fun view_verify_selected_rarity(
+        creator: address,
+        collection_name: String,
+        random_num: u256
+    ): String acquires Lootboxes {
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let selected_rarity = select_rarity(lootbox, random_num);
+        selected_rarity
+    }
+
+    #[view]
+    public fun view_receivable_rarities(
+        creator: address,
+        collection_name: String,
+    ): vector<String> acquires Lootboxes {
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let rarities = lootbox.rarity_keys;
+        let receivable_list = vector::empty<String>();
+        let i = 0;
+        while (i < vector::length(&rarities)) {
+            let rarity = vector::borrow(&rarities, i);
+            let available_tokens = get_tokens_by_rarity(lootbox, *rarity);
+            if (vector::length(&available_tokens) > 0) {
+                vector::push_back(&mut receivable_list, *rarity);
+            };
+            i = i + 1;
+        };
+        receivable_list
+    }
+
+
+    fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
+        let total_weight = (0 as u256);
+        let rarities = &lootbox.rarities;
+        
+        let len = vector::length(&lootbox.rarity_keys);
+        assert!(len > 0, error::invalid_state(EINVALID_VECTOR_LENGTH));
+        
+        // Calculate total weight and store sorted rarities by weight (descending)
+        let i = 0;
+        let sorted_rarities = vector::empty<String>();
+        let sorted_weights = vector::empty<u64>();
+        
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let weight = *table::borrow(rarities, *rarity);
+            total_weight = total_weight + (weight as u256);
+            
+            // Insert into sorted vectors
+            let j = 0;
+            let inserted = false;
+            while (j < vector::length(&sorted_weights)) {
+                if (weight > *vector::borrow(&sorted_weights, j)) {
+                    vector::insert(&mut sorted_weights, j,weight);
+                    vector::insert(&mut sorted_rarities, j, *rarity);
+                    inserted = true;
+                    break
+                };
+                j = j + 1;
+            };
+            if (!inserted) {
+                vector::push_back(&mut sorted_weights, weight);
+                vector::push_back(&mut sorted_rarities, *rarity);
+            };
+            
+            i = i + 1;
+        };
+        
+        // Use random number to select initial rarity
+        let roll = random_num % total_weight;
+        let current_weight = (0 as u256);
+        
+        // Find initially selected rarity
+        i = 0;
+        let selected_rarity = string::utf8(b""); // Initialize with empty string
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let weight = *table::borrow(rarities, *rarity);
+            current_weight = current_weight + (weight as u256);
+            
+            if (roll < current_weight) {
+                selected_rarity = *rarity;
+                break
+            };
+            i = i + 1;
+        };
+        
+        if (string::length(&selected_rarity) == 0) {
+            assert!(false, error::not_found(ENO_RARITY_SELECTED));
+        };
+        
+        // Check if selected rarity has available tokens
+        let available_tokens = get_tokens_by_rarity(lootbox, selected_rarity);
+        if (vector::length(&available_tokens) > 0) {
+            return selected_rarity
+        };
+        
+        // If no tokens in selected rarity, look for tokens in more common rarities
+        i = vector::length(&sorted_rarities) - 1;
+        while (i >= 0) {
+            let rarity = *vector::borrow(&sorted_rarities, i);
+            let weight = *vector::borrow(&sorted_weights, i);
+            if (weight > *table::borrow(rarities, selected_rarity)) {
+                let available_tokens = get_tokens_by_rarity(lootbox, rarity);
+                if (vector::length(&available_tokens) > 0) {
+                    return rarity
+                };
+            };
+            i = i - 1;
+        };
+        
+        // If no tokens found in any rarity, abort
+        assert!(false, error::not_found(ENO_TOKENS_AVAILABLE));
+        selected_rarity // This line will never be reached due to the assert above
     }
 
     public entry fun set_lootbox_price<CoinType>(
@@ -1245,7 +1414,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         new_price: u64
     ) acquires Lootboxes, FixedPriceListing {
+
+        if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
+            assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+        };
+
+        // Get creator address
         let creator_addr = signer::address_of(creator);
+        // Get collection name
         let collection_name_str = string::utf8(collection_name);
 
         // Get the lootbox
