@@ -33,6 +33,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use std::bcs;
 
     //Friends
+    use projectOwnerAdr::token0x3_marketplace_v2;
     friend projectOwnerAdr::token0x3_marketplace_v2;
 
     // Constants
