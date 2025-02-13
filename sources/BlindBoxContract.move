@@ -32,6 +32,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use supra_addr::deposit;
     use std::bcs;
 
+    //Friends
+    friend projectOwnerAdr::token0x3_marketplace_v2;
+
     // Constants
     const RESOURCE_ACCOUNT_SEED: vector<u8> = b"LOOTBOX_RESOURCE_V17";
     const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V17";
@@ -1313,6 +1316,41 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
         };
     }
+
+
+    // Friend function that can only be called by friend modules
+    public(friend) fun deposit_to_escrow(
+        token_id: TokenId,
+        amount: u64,
+        escrow_address: address,
+    ) acquires UserClaimResourceInfoV2 {
+        assert!(
+            exists<UserClaimResourceInfoV2>(escrow_address),
+            error::not_found(ERESOURCE_ESCROW_CLAIM_ACCOUNT_NOT_EXISTS)
+        );
+
+        let claim_info = borrow_global_mut<UserClaimResourceInfoV2>(escrow_address);
+        
+        // Get token details
+        let (creator, collection, name, property_version) = token::get_token_id_fields(&token_id);
+        
+        // Add to claimable tokens
+        vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
+            creator,
+            collection,
+            name,
+            property_version
+        });
+
+        // Direct transfer to escrow address
+        token::direct_transfer(
+            &resource_signer, // You'll need to pass this in or get it from somewhere
+            escrow_address,
+            token_id,
+            amount
+        );
+    }
+
 
     // Claim all tokens function
 
