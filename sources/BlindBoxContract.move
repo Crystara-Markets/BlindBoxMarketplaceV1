@@ -87,6 +87,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EDEPRECATED: u64 = 40;
     const ENO_TOKENS_AVAILABLE: u64 = 41;
     const ENO_RARITY_SELECTED: u64 = 42;
+    const EINVALID_AMOUNT: u64 = 43;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -1496,32 +1497,33 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     // Friend function that can only be called by friend modules
     public(friend) fun deposit_to_escrow(
-        token_id: TokenId,
+        signer: &signer,
+        
+        creator: address,
+        collection_name: String,
+        token_name: String,
+        property_version: u64,
+
         amount: u64,
-        escrow_address: address,
     ) acquires UserClaimResourceInfoV2 {
+        let user_address = signer::address_of(signer);
         assert!(
-            exists<UserClaimResourceInfoV2>(escrow_address),
+            exists<UserClaimResourceInfoV2>(user_address),
             error::not_found(ERESOURCE_ESCROW_CLAIM_ACCOUNT_NOT_EXISTS)
         );
 
-        let claim_info = borrow_global_mut<UserClaimResourceInfoV2>(escrow_address);
-        
-        // Get token details
-        let (creator, collection, name, property_version) = token::get_token_id_fields(&token_id);
-        
-        // Add to claimable tokens
-        vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
-            creator,
-            collection,
-            name,
-            property_version
-        });
+        let claim_info = borrow_global_mut<UserClaimResourceInfoV2>(user_address);
+        let claim_signer = account::create_signer_with_capability(&claim_info.resource_signer_cap);
 
-        // Direct transfer to escrow address
+        let token_data_id = token::create_token_data_id(creator, collection_name, token_name);
+        let token_id = token::create_token_id(token_data_id, property_version);
+
+        let balance = token::balance_of(signer::address_of(signer), token_id);
+        assert!(balance >= amount, error::invalid_argument(EINVALID_AMOUNT));
+
         token::direct_transfer(
-            &resource_signer, // You'll need to pass this in or get it from somewhere
-            escrow_address,
+            &signer,
+            &claim_signer,
             token_id,
             amount
         );
