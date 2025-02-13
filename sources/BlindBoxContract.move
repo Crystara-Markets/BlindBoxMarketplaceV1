@@ -1522,7 +1522,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(balance >= amount, error::invalid_argument(EINVALID_AMOUNT));
 
         token::direct_transfer(
-            &signer,
+            signer,
             &claim_signer,
             token_id,
             amount
