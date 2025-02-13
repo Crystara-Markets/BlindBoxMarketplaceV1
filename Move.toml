@@ -22,7 +22,7 @@ subdir = "aptos-move/framework/aptos-token"
 
 [dependencies]
 SupraVrf = { git = "https://github.com/Entropy-Foundation/vrf-interface", subdir = "supra/testnet", rev = "testnet"  }           
-MarketplaceV2 = { local = false, address = "0xfd566b048d7ea241ebd4d28a3d60a9eaaaa29a718dfff52f2ff4ca8581363b85::token0x3_marketplace_v2" }
+MarketplaceV2 = { local = "../Crystara_Marketplace/sources" }
 
 #[dependencies]
 #SupraVrf = { local = "sources/supra-vrf/testnet"  }
