@@ -32,10 +32,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use supra_addr::deposit;
     use std::bcs;
 
-    //Friends
-    use projectOwnerAdr::token0x3_marketplace_v2;
-    friend projectOwnerAdr::token0x3_marketplace_v2;
-
     // Constants
     const RESOURCE_ACCOUNT_SEED: vector<u8> = b"LOOTBOX_RESOURCE_V17";
     const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V17";
@@ -1497,7 +1493,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
 
     // Friend function that can only be called by friend modules
-    public(friend) fun deposit_to_escrow(
+    public fun deposit_to_escrow(
         signer: &signer,
         
         creator: address,

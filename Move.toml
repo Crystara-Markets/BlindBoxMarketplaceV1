@@ -22,7 +22,6 @@ subdir = "aptos-move/framework/aptos-token"
 
 [dependencies]
 SupraVrf = { git = "https://github.com/Entropy-Foundation/vrf-interface", subdir = "supra/testnet", rev = "testnet"  }           
-Crystara_NFTMarketplace_V2 = { local = "supra/configs/move_workspace/Crystara_Marketplace/sources" }
 
 #[dependencies]
 #SupraVrf = { local = "sources/supra-vrf/testnet"  }
