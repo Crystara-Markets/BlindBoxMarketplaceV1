@@ -2631,7 +2631,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             lootbox.maxRolls,
             rolled,
             lootbox.stock,
-            lootbox.max_stock,
+            lootbox.maxRolls,
             price,
             lootbox.requiresKey,
             // Rarity info
