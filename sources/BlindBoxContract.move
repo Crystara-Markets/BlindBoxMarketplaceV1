@@ -2410,6 +2410,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: vector<u8>
     ) acquires  Lootboxes {
+        assert!(false, EFUNCTION_DISABLED);
 
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
@@ -2430,6 +2431,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: bool
     ) acquires Lootboxes {
+                assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2449,6 +2451,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: u64
     ) acquires Lootboxes {
+                assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2468,6 +2471,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: u256
     ) acquires Lootboxes {
+                assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
