@@ -2027,6 +2027,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             fresh_account = true;
         };
         let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
+        assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
         
         assert!(false, EDEPRECATED);
     }
