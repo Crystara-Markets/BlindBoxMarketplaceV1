@@ -2410,7 +2410,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: vector<u8>
     ) acquires  Lootboxes {
-        assert!(false, EFUNCTION_DISABLED);
+        
 
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
@@ -2422,6 +2422,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
 
+        assert!(false, EFUNCTION_DISABLED);
+
         //internal_set_lootbox_extension_string(creator, collection_name_str, key_str, value_str);
     }
 
@@ -2431,7 +2433,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: bool
     ) acquires Lootboxes {
-                assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2440,6 +2441,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        assert!(false, EFUNCTION_DISABLED);
 
         //internal_set_lootbox_extension_bool(creator, collection_name_str, key_str, value);
     }
@@ -2451,7 +2454,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: u64
     ) acquires Lootboxes {
-                assert!(false, EFUNCTION_DISABLED);
+        
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2460,6 +2463,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        assert!(false, EFUNCTION_DISABLED);
 
         //internal_set_lootbox_extension_u64(creator, collection_name_str, key_str, value);
 
@@ -2471,7 +2476,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: u256
     ) acquires Lootboxes {
-                assert!(false, EFUNCTION_DISABLED);
+        
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2480,7 +2485,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
+        
+        assert!(false, EFUNCTION_DISABLED);
         //internal_set_lootbox_extension_u256(creator, collection_name_str, key_str, value);
     }
 }
