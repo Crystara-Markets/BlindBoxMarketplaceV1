@@ -2333,7 +2333,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
-                updated_value: string::utf8(bcs::to_bytes(value)),
+                updated_value: string::utf8(bcs::to_bytes(&value)),
                 updated_key_type: string::utf8(b"bool"),
                 timestamp: timestamp::now_microseconds(),
             }
@@ -2371,7 +2371,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
-                updated_value: string::utf8(bcs::to_bytes(value)),
+                updated_value: string::utf8(bcs::to_bytes(&value)),
                 updated_key_type: string::utf8(b"u64"),
                 timestamp: timestamp::now_microseconds(),
             }
@@ -2409,7 +2409,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
-                updated_value: string::utf8(bcs::to_bytes(value)),
+                updated_value: string::utf8(bcs::to_bytes(&value)),
                 updated_key_type: string::utf8(b"u256"),
                 timestamp: timestamp::now_microseconds(),
             }
