@@ -2645,5 +2645,5 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             url,
             rarity_colors,
             dynamic_seed_enabled
-        )
+        );
     }
