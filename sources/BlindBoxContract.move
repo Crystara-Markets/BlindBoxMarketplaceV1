@@ -2594,10 +2594,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
         let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
 
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
         // Get status
         let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
             get_lootbox_status(creator_addr, collection_name);
@@ -2616,6 +2612,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
         let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
+
+        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
 
         (
             // Basic lootbox info
