@@ -287,6 +287,17 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         updated_u256s: vector<String>,
         timestamp: u64,
     }
+    #[event]
+    struct LootboxExtensionUpdatedEventV2 has drop, store {
+        creator: address,
+        collection_name: String,
+        // Changed values
+        updated_key_type: String,
+        updated_key: String,
+        updated_value: String,
+
+        timestamp: u64,
+    }
 
     struct LootboxExtension has store {
         creator: address,
@@ -2280,13 +2291,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Emit event
         event::emit(
-            LootboxExtensionUpdatedEvent {
+            LootboxExtensionUpdatedEventV2 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
-                updated_strings: vector[key_str],
-                updated_bools: vector::empty(),
-                updated_u64s: vector::empty(),
-                updated_u256s: vector::empty(),
+                updated_key: key_str,
+                updated_value: value_str,
+                updated_key_type: string::utf8(b"String"),
                 timestamp: timestamp::now_microseconds(),
             }
         );
@@ -2319,13 +2329,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         event::emit(
-            LootboxExtensionUpdatedEvent {
+            LootboxExtensionUpdatedEventV2 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
-                updated_strings: vector::empty(),
-                updated_bools: vector[key_str],
-                updated_u64s: vector::empty(),
-                updated_u256s: vector::empty(),
+                updated_key: key_str,
+                updated_value: string::utf8(bcs::to_bytes(value)),
+                updated_key_type: string::utf8(b"bool"),
                 timestamp: timestamp::now_microseconds(),
             }
         );
@@ -2358,13 +2367,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         event::emit(
-            LootboxExtensionUpdatedEvent {
+            LootboxExtensionUpdatedEventV2 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
-                updated_strings: vector::empty(),
-                updated_bools: vector::empty(),
-                updated_u64s: vector[key_str],
-                updated_u256s: vector::empty(),
+                updated_key: key_str,
+                updated_value: string::utf8(bcs::to_bytes(value)),
+                updated_key_type: string::utf8(b"u64"),
                 timestamp: timestamp::now_microseconds(),
             }
         );
@@ -2397,13 +2405,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         event::emit(
-            LootboxExtensionUpdatedEvent {
+            LootboxExtensionUpdatedEventV2 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
-                updated_strings: vector::empty(),
-                updated_bools: vector::empty(),
-                updated_u64s: vector::empty(),
-                updated_u256s: vector[key_str],
+                updated_key: key_str,
+                updated_value: string::utf8(bcs::to_bytes(value)),
+                updated_key_type: string::utf8(b"u256"),
                 timestamp: timestamp::now_microseconds(),
             }
         );
