@@ -2128,8 +2128,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
 
         // Set extension table values
-        internal_set_lootbox_extension_string(&collection_signer, collection_name, string::utf8(b"url"), string::utf8(extension_url));
-        internal_set_lootbox_extension_string(&collection_signer, collection_name, string::utf8(b"rarity_colors"), string::utf8(extension_rarity_colors));
+        internal_set_lootbox_extension_string(&collection_signer, string::utf8(collection_name), string::utf8(b"url"), string::utf8(extension_url));
+        internal_set_lootbox_extension_string(&collection_signer, string::utf8(collection_name), string::utf8(b"rarity_colors"), string::utf8(extension_rarity_colors));
     }
 
 
