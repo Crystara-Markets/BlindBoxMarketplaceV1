@@ -85,6 +85,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ENO_TOKENS_AVAILABLE: u64 = 41;
     const ENO_RARITY_SELECTED: u64 = 42;
     const EINVALID_AMOUNT: u64 = 43;
+    const EFUNCTION_DISABLED: u64 = 44;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -1031,7 +1032,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         
         //debug::print(&b"module resource signer: ");
-        assert!(signer::address_of(&module_resource_signer) == @v17_resource_addr, error::invalid_state(EINVALID_MODULE_RESOURCE_SIGNER));
+        assert!(signer::address_of(&module_resource_signer) == @dvrf_whitelisted_resource_addr, error::invalid_state(EINVALID_MODULE_RESOURCE_SIGNER));
 
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
@@ -2406,6 +2407,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: vector<u8>
     ) acquires LootboxExtensions, Lootboxes {
+
+        assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2425,6 +2428,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: bool
     ) acquires LootboxExtensions, Lootboxes {
+        assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2444,6 +2448,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: u64
     ) acquires LootboxExtensions, Lootboxes {
+        assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2463,6 +2468,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: u256
     ) acquires LootboxExtensions, Lootboxes {
+        assert!(false, EFUNCTION_DISABLED);
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
