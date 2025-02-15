@@ -2565,9 +2565,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         String,  // description
         String,  // collection_uri
         // Token collection info
-        String,  // keys_collection_name
-        String,  // keys_collection_description
-        String,  // keys_collection_uri
+
         // Status info (from get_lootbox_status)
         u64,    // time_till_active
         u64,    // time_till_whitelist
@@ -2614,16 +2612,16 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
 
+        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
+        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
+
         (
             // Basic lootbox info
             lootbox.creator,
             collection_name,
-            lootbox.description,
-            lootbox.collection_uri,
+            lootbox_description,
+            lootbox_uri,
             // Token collection info
-            lootbox.keys_collection_name,
-            lootbox.keys_collection_description,
-            lootbox.keys_collection_uri,
             // Status info
             time_till_active,
             time_till_whitelist,
