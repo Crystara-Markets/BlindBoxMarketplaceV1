@@ -2026,7 +2026,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         if (!exists<Lootboxes>(account_addr)) {
             fresh_account = true;
         };
-        let lootboxes = borrow_global<Lootboxes>(account_addr);
+        let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
         
         assert!(false, EDEPRECATED);
     }
