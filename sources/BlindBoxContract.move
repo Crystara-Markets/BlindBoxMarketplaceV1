@@ -2051,21 +2051,32 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         rarity_weights: vector<u64>,
         show_items_on_roll: vector<bool>
     ) acquires Lootboxes {
-        // Check lootbox doesn't already exist if table exists
-        let account_addr = signer::address_of(source_account);
-        let fresh_account = false;
+        create_lootbox<CoinType>(
+            source_account,
+            collection_name,
+            description,
+            collection_uri,
+            maximum_supply,
+            initial_stock,
+            max_stock,
+            price,
+            requiresKey,
+            keys_collection_name,
+            keys_collection_description,
+            keys_collection_url
+        );
 
-        //Check if Lootboxes Table Exists for Creator, If No, Init Table.
-        if (!exists<Lootboxes>(account_addr)) {
-            fresh_account = true;
-        };
-        let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
-        assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        assert!(false, EDEPRECATED);
+        // Set rarities...
+        set_rarities(
+            source_account,
+            collection_name,
+            rarity_names,
+            rarity_weights,
+            show_items_on_roll
+        );
     }
 
+    //Not in use yet.
     public entry fun create_lootbox_with_rarities_and_extension<CoinType>(
         source_account: &signer,
         collection_name: vector<u8>,
