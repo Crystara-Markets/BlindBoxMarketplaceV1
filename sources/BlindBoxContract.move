@@ -2588,6 +2588,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         Option<String>, // rarity_colors
         Option<bool>    // dynamic_seed_enabled
     ) acquires Lootboxes, FixedPriceListing, LootboxExtensions {
+
+        // Called first as they borrow Lootbox
+        let maxsupply = get_lootbox_maxsupply(creator_addr, collection_name);
+        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
+        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
+
         assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
@@ -2602,15 +2608,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // Get supply info
         let rolled = get_lootbox_rolled(creator_addr, collection_name);
-        let maxsupply = get_lootbox_maxsupply(creator_addr, collection_name);
-        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
         
         // Get extension values
         let url = get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"url"));
         let rarity_colors = get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"rarity_colors"));
         let dynamic_seed_enabled = get_lootbox_extension_bool(creator_addr, collection_name, string::utf8(b"dynamic_seed_enabled"));
-        
-        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
 
         let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
         let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
