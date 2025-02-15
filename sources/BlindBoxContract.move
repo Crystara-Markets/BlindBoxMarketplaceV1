@@ -2409,7 +2409,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         key: vector<u8>,
         value: vector<u8>
-    ) acquires LootboxExtensions, Lootboxes {
+    ) acquires  Lootboxes {
 
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
@@ -2429,7 +2429,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         key: vector<u8>,
         value: bool
-    ) acquires LootboxExtensions, Lootboxes {
+    ) acquires Lootboxes {
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2448,7 +2448,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         key: vector<u8>,
         value: u64
-    ) acquires LootboxExtensions, Lootboxes {
+    ) acquires Lootboxes {
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2467,7 +2467,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         key: vector<u8>,
         value: u256
-    ) acquires LootboxExtensions, Lootboxes {
+    ) acquires Lootboxes {
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
