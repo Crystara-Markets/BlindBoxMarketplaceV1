@@ -276,17 +276,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       rarities_price_modifier_if_sold_out: table::Table<String, u64>, //Map rarity to price modifier
     }
 
+    //DEPRECATED
     #[event]
-    struct LootboxExtensionUpdatedEvent has drop, store {
-        creator: address,
-        collection_name: String,
-        // Changed values
-        updated_strings: vector<String>, // keys that were updated
-        updated_bools: vector<String>,
-        updated_u64s: vector<String>,
-        updated_u256s: vector<String>,
-        timestamp: u64,
-    }
+    struct LootboxExtensionUpdatedEvent has drop, store {creator: address,collection_name: String,updated_strings: vector<String>,updated_bools: vector<String>,updated_u64s: vector<String>,updated_u256s: vector<String>,timestamp: u64,}
+    
     #[event]
     struct LootboxExtensionUpdatedEventV2 has drop, store {
         creator: address,
@@ -2033,17 +2026,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             fresh_account = true;
         };
         
-        // Convert the vectors to strings
-        let collection_name_str = string::utf8(collection_name);
-        let description_str = string::utf8(description);
-        let collection_uri_str = string::utf8(collection_uri);
-        if (!fresh_account) {
-            let lootboxes = borrow_global<Lootboxes>(account_addr);
-            assert!(
-                !table::contains(&lootboxes.lootbox_table, collection_name_str),
-                error::already_exists(ELOOTBOX_EXISTS)
-            );
-        };
+        assert!(false, EDEPRECATED);
     }
 
     public entry fun create_lootbox_with_rarities_v2<CoinType>(
