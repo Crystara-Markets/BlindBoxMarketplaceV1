@@ -1348,7 +1348,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let j = 0;
             let inserted = false;
             while (j < vector::length(&sorted_weights)) {
-                if (weight > *vector::borrow(&sorted_weights, j)) {
+                if (weight >= *vector::borrow(&sorted_weights, j)) {
                     vector::insert(&mut sorted_weights, j,weight);
                     vector::insert(&mut sorted_rarities, j, *rarity);
                     inserted = true;
