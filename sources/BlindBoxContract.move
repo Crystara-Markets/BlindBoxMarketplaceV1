@@ -2066,7 +2066,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(false, EDEPRECATED);
     }
 
-        public entry fun create_lootbox_with_rarities_and_extension<CoinType>(
+    public entry fun create_lootbox_with_rarities_and_extension<CoinType>(
         source_account: &signer,
         collection_name: vector<u8>,
         description: vector<u8>,
