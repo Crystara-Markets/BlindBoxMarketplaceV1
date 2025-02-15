@@ -421,7 +421,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
 
-    fun create_lootbox<CoinType>(
+    public entry fun create_lootbox<CoinType>(
       source_account: &signer,
       collection_name: vector<u8>,
       description: vector<u8>,
@@ -2051,6 +2051,42 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         rarity_weights: vector<u64>,
         show_items_on_roll: vector<bool>
     ) acquires Lootboxes {
+        // Check lootbox doesn't already exist if table exists
+        let account_addr = signer::address_of(source_account);
+        let fresh_account = false;
+
+        //Check if Lootboxes Table Exists for Creator, If No, Init Table.
+        if (!exists<Lootboxes>(account_addr)) {
+            fresh_account = true;
+        };
+        let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
+        assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        assert!(false, EDEPRECATED);
+    }
+
+        public entry fun create_lootbox_with_rarities_and_extension<CoinType>(
+        source_account: &signer,
+        collection_name: vector<u8>,
+        description: vector<u8>,
+        collection_uri: vector<u8>,
+        maximum_supply: u64,
+        initial_stock: u64,
+        max_stock: u64,
+        price: u64,
+        requiresKey: bool,
+        keys_collection_name: vector<u8>,
+        keys_collection_description: vector<u8>,
+        keys_collection_url: vector<u8>,
+        // Rarity parameters
+        rarity_names: vector<vector<u8>>,
+        rarity_weights: vector<u64>,
+        show_items_on_roll: vector<bool>,
+        // Offchain Params in extension table 
+        extension_url: vector<u8>, 
+        extension_rarity_colors: vector<u8>
+    ) acquires Lootboxes {
         // Validations...
 
         // Call create_lootbox with all parameters
@@ -2077,6 +2113,23 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             rarity_weights,
             show_items_on_roll
         );
+
+        let account_addr = signer::address_of(source_account);
+        let fresh_account = false;
+
+        //Check if Lootboxes Table Exists for Creator, If No, Init Table.
+        if (!exists<Lootboxes>(account_addr)) {
+            assert!(false, ELOOTBOX_NOTEXISTS);
+        };
+        let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
+        assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        // Set extension table values
+        internal_set_lootbox_extension_string(&collection_signer, collection_name, string::utf8(b"url"), string::utf8(extension_url));
+        internal_set_lootbox_extension_string(&collection_signer, collection_name, string::utf8(b"rarity_colors"), string::utf8(extension_rarity_colors));
     }
 
 
