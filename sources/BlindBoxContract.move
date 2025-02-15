@@ -421,7 +421,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
 
-    public entry fun create_lootbox<CoinType>(
+    fun create_lootbox<CoinType>(
       source_account: &signer,
       collection_name: vector<u8>,
       description: vector<u8>,
