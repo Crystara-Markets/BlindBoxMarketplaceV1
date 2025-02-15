@@ -2086,7 +2086,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Offchain Params in extension table 
         extension_url: vector<u8>, 
         extension_rarity_colors: vector<u8>
-    ) acquires Lootboxes {
+    ) acquires Lootboxes, LootboxExtensions {
         // Validations...
 
         // Call create_lootbox with all parameters
