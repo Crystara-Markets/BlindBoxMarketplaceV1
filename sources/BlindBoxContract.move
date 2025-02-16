@@ -2707,7 +2707,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
 
             let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.resource_signer_address, collection_name, string::utf8(b"url")),
+                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"url")),
                 string::utf8(b"")
             );
             value
