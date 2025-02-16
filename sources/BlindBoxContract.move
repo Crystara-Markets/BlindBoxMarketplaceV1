@@ -2711,7 +2711,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 string::utf8(b"")
             );
             value
-        }
+        };
         let rarity_colors = option::get_with_default(
             &get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"rarity_colors")),
             string::utf8(b"")
