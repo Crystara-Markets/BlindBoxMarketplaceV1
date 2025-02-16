@@ -644,6 +644,47 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
     }
 
+    public entry fun set_rarities_with_colors(
+    collection_owner: &signer,
+    lootbox_name: vector<u8>,
+    rarity_names: vector<vector<u8>>,
+    rarity_weights: vector<u64>,
+    show_items_on_roll: vector<bool>,
+    rarity_colors: vector<u8>  // New parameter for colors
+) acquires Lootboxes, LootboxExtensions {
+    let owner_addr = signer::address_of(collection_owner);
+    let lootbox_name_str = string::utf8(lootbox_name);
+    
+    // First call the original set_rarities function
+    set_rarities(
+        collection_owner,
+        lootbox_name,
+        rarity_names,
+        rarity_weights,
+        show_items_on_roll
+    );
+    
+    // Get the lootbox to access its resource account
+    let lootboxes = borrow_global<Lootboxes>(owner_addr);
+    let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+    assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+    
+    // Create resource signer to set extension
+    let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+    
+    // Set the rarity colors in extensions
+    internal_set_lootbox_extension_string(
+        &resource_signer,
+        lootbox_name_str,
+        string::utf8(b"rarity_colors"),
+        string::utf8(rarity_colors)
+    );
+    
+}
+
+
+
   //Add Token To Lootbox
     public entry fun add_token_to_lootbox(
       creator: &signer,
