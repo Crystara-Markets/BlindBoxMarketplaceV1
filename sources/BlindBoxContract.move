@@ -2712,14 +2712,26 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
             value
         };
-        let rarity_colors = option::get_with_default(
-            &get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"rarity_colors")),
-            string::utf8(b"")
-        );
-        let dynamic_seed_enabled = option::get_with_default(
-            &get_lootbox_extension_bool(creator_addr, collection_name, string::utf8(b"dynamic_seed_enabled")),
-            false
-        );
+        let rarity_colors = { 
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"rarity_colors")),
+                string::utf8(b"")
+            );
+            value
+        };
+        let dynamic_seed_enabled = {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(b"dynamic_seed_enabled")),
+                false
+            );
+            value
+        };
 
         assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
