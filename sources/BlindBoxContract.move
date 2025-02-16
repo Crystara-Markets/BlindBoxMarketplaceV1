@@ -2700,11 +2700,18 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Get supply info
         let rolled = get_lootbox_rolled(creator_addr, collection_name);
         
+
         // Get extension values
-        let url = option::get_with_default(
-            &get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"url")),
-            string::utf8(b"")
-        );
+        let url = {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_string(lootbox.resource_signer_address, collection_name, string::utf8(b"url")),
+                string::utf8(b"")
+            );
+            value
+        }
         let rarity_colors = option::get_with_default(
             &get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"rarity_colors")),
             string::utf8(b"")
