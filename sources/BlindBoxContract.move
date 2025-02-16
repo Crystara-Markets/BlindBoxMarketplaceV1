@@ -2648,4 +2648,108 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             dynamic_seed_enabled
         )
     }
+
+        #[view]
+    public fun get_lootbox_info_v2<CoinType>(
+        creator_addr: address,
+        collection_name: String
+    ): (
+        // Basic lootbox info
+        address, // creator
+        String,  // collection_name
+        String,  // description
+        String,  // collection_uri
+        // Token collection info
+
+        // Status info (from get_lootbox_status)
+        u64,    // time_till_active
+        u64,    // time_till_whitelist
+        bool,   // is_active
+        bool,   // whitelist_mode
+        // Supply and price info
+        u64,    // maxRolls (maxsupply)
+        u64,    // rolled
+        u64,    // stock
+        u64,    // max_stock
+        u64,    // price
+        bool,   // requiresKey
+        // Rarity info (from get_lootbox_rarities)
+        vector<String>, // rarity_names
+        vector<u64>,    // weights
+        vector<bool>,   // show_items
+        vector<String>, // viewReceivableRarities
+        // Extension values
+        String, // url
+        String, // rarity_colors
+        bool    // dynamic_seed_enabled
+    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions {
+
+        // Called first as they borrow Lootbox
+        let maxsupply = get_lootbox_maxsupply(creator_addr, collection_name);
+        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
+        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
+
+        // Get status
+        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
+            get_lootbox_status(creator_addr, collection_name);
+        
+        // Get rarity info
+        let (rarity_names, weights, show_items) = 
+            get_lootbox_rarities(creator_addr, collection_name);
+        
+        // Get supply info
+        let rolled = get_lootbox_rolled(creator_addr, collection_name);
+        
+        // Get extension values
+        let url = option::get_with_default(
+            &get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"url")),
+            string::utf8(b"")
+        );
+        let rarity_colors = option::get_with_default(
+            &get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"rarity_colors")),
+            string::utf8(b"")
+        );
+        let dynamic_seed_enabled = option::get_with_default(
+            &get_lootbox_extension_bool(creator_addr, collection_name, string::utf8(b"dynamic_seed_enabled")),
+            false
+        );
+
+        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
+        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
+
+
+        (
+            // Basic lootbox info
+            lootbox.creator,
+            collection_name,
+            lootbox_description,
+            lootbox_uri,
+            // Token collection info
+            // Status info
+            time_till_active,
+            time_till_whitelist,
+            is_active,
+            whitelist_mode,
+            // Supply and price info
+            lootbox.maxRolls,
+            rolled,
+            lootbox.stock,
+            lootbox.maxRolls,
+            price,
+            lootbox.requiresKey,
+            // Rarity info
+            rarity_names,
+            weights,
+            show_items,
+            viewReceivableRarities,
+            // Extension values
+            url,
+            rarity_colors,
+            dynamic_seed_enabled
+        )
+    }
 }
