@@ -1734,7 +1734,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
     }
 
-    // Set whitelist amounts for addresses
+    // DEPRECATED VERSION OF SET WHITELIST AMOUNTS
     public entry fun set_whitelist_amounts(
         creator: &signer,
         collection_name: vector<u8>,
@@ -1751,18 +1751,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
 
-        let i = 0;
-        let len = vector::length(&addresses);
-        while (i < len) {
-            let addr = *vector::borrow(&addresses, i);
-            let amount = *vector::borrow(&amounts, i);
-            if (table::contains(&lootbox.allow_mintList, addr)) {
-                *table::borrow_mut(&mut lootbox.allow_mintList, addr) = amount;
-            } else {
-                table::add(&mut lootbox.allow_mintList, addr, amount);
-            };
-            i = i + 1;
-        };
+        assert!(false, error::not_found(EDEPRECATED))
     }
 
     // Set auto-activation time
@@ -1858,13 +1847,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         let current_time = timestamp::now_microseconds();
         let time_till_active = if (lootbox.automatically_active_at_time > current_time) {
-            lootbox.automatically_active_at_time - current_time
+            lootbox.automatically_active_at_time 
         } else {
             0
         };
         
         let time_till_whitelist = if (lootbox.automatically_whitelist_mode_at_time > current_time) {
-            lootbox.automatically_whitelist_mode_at_time - current_time
+            lootbox.automatically_whitelist_mode_at_time
         } else {
             0
         };
