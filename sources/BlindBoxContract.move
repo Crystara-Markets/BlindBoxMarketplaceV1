@@ -1122,6 +1122,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
     }
 
+    #[view]
+    public fun view_current_time(): u64 {
+        timestamp::now_microseconds()
+    }
+
     /*public entry fun deposit_supra_to_vrf<CoinType>(
     user: &signer,
     amount: u64
