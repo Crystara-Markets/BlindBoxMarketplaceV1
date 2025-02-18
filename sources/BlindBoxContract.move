@@ -229,6 +229,24 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         timestamp: u64
     }
 
+    #[event]
+    struct WhitelistUpdatedEvent has drop, store {
+        creator: address,
+        collection_name: String,
+        addresses: vector<address>,
+        amounts: vector<u64>,
+        replace_existing: bool,
+        timestamp: u64
+    }
+
+    #[event]
+    struct WhitelistRemovedEvent has drop, store {
+        creator: address,
+        collection_name: String,
+        removed_addresses: vector<address>,
+        timestamp: u64
+    }
+
 
     // Add event handle to PendingRewards struct
     struct PendingRewards has key {
@@ -1013,7 +1031,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Check auto-whitelist time
         if (lootbox.automatically_whitelist_mode_at_time != 0 && current_time >= lootbox.automatically_whitelist_mode_at_time) {
-            lootbox.whitelistMode = false;
+            lootbox.whitelistMode = true;
         };
 
         // Check if lootbox is active
@@ -2817,4 +2835,95 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             dynamic_seed_enabled
         )
     }
+
+    public entry fun add_addresses_to_whitelist(
+        creator: &signer,
+        collection_name: String,
+        addresses: vector<address>,
+        amounts: vector<u64>,
+        replace_existing: bool  // true = replace amount, false = add to existing amount
+    ) acquires Lootboxes {
+        let creator_addr = signer::address_of(creator);
+        
+        // Verify vector lengths match
+        let addr_len = vector::length(&addresses);
+        assert!(addr_len == vector::length(&amounts), error::invalid_argument(EINVALID_VECTOR_LENGTH));
+        
+        // Get lootbox
+        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name);
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        let i = 0;
+        while (i < addr_len) {
+            let addr = *vector::borrow(&addresses, i);
+            let amount = *vector::borrow(&amounts, i);
+            
+            if (table::contains(&lootbox.allow_mintList, addr)) {
+                if (replace_existing) {
+                    // Replace existing amount
+                    *table::borrow_mut(&mut lootbox.allow_mintList, addr) = amount;
+                } else {
+                    // Add to existing amount
+                    let current_amount = *table::borrow(&lootbox.allow_mintList, addr);
+                    *table::borrow_mut(&mut lootbox.allow_mintList, addr) = current_amount + amount;
+                };
+            } else {
+                // New entry
+                table::add(&mut lootbox.allow_mintList, addr, amount);
+            };
+            
+            i = i + 1;
+        };
+        
+        // Emit event
+        event::emit(WhitelistUpdatedEvent {
+            creator: creator_addr,
+            collection_name,
+            addresses,
+            amounts,
+            replace_existing,
+            timestamp: timestamp::now_microseconds()
+        });
+    }
+
+    public entry fun remove_addresses_from_whitelist(
+        creator: &signer,
+        collection_name: String,
+        addresses: vector<address>
+    ) acquires Lootboxes {
+        let creator_addr = signer::address_of(creator);
+        
+        // Get lootbox
+        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name);
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        let i = 0;
+        let len = vector::length(&addresses);
+        let removed_addresses = vector::empty<address>();
+        
+        while (i < len) {
+            let addr = *vector::borrow(&addresses, i);
+            if (table::contains(&lootbox.allow_mintList, addr)) {
+                table::remove(&mut lootbox.allow_mintList, addr);
+                vector::push_back(&mut removed_addresses, addr);
+            };
+            i = i + 1;
+        };
+        
+        // Emit event only for actually removed addresses
+        if (vector::length(&removed_addresses) > 0) {
+            event::emit(WhitelistRemovedEvent {
+                creator: creator_addr,
+                collection_name,
+                removed_addresses,
+                timestamp: timestamp::now_microseconds()
+            });
+        };
+    }
+
+
+
 }
+
