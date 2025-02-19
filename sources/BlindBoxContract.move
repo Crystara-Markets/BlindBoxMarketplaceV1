@@ -1027,11 +1027,33 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let current_time = timestamp::now_microseconds();
         if (lootbox.automatically_active_at_time != 0 && current_time >= lootbox.automatically_active_at_time) {
             lootbox.is_active = true;
+            event::emit(
+                LootboxStatusUpdatedEvent {
+                    creator: creator_addr,
+                    collection_name: collection_name_str,
+                    is_active: lootbox.is_active,
+                    is_whitelist_mode: lootbox.whitelistMode,
+                    auto_trigger_whitelist_time: lootbox.automatically_whitelist_mode_at_time,
+                    auto_trigger_active_time: lootbox.automatically_active_at_time,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
         };
 
         // Check auto-whitelist time
         if (lootbox.automatically_whitelist_mode_at_time != 0 && current_time >= lootbox.automatically_whitelist_mode_at_time) {
             lootbox.whitelistMode = true;
+            event::emit(
+                LootboxStatusUpdatedEvent {
+                    creator: creator_addr,
+                    collection_name: collection_name_str,
+                    is_active: lootbox.is_active,
+                    is_whitelist_mode: lootbox.whitelistMode,
+                    auto_trigger_whitelist_time: lootbox.automatically_whitelist_mode_at_time,
+                    auto_trigger_active_time: lootbox.automatically_active_at_time,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
         };
 
         // Check if lootbox is active
