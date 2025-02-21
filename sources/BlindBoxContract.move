@@ -1024,7 +1024,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Fetch the lootbox
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
 
-        assert(vector::length(&lootbox.tokensInLootbox) > 0, error::invalid_state(ELOOTBOX_EMPTY));
+        assert!(vector::length(&lootbox.tokensInLootbox) > 0, error::invalid_state(ELOOTBOX_EMPTY));
 
         // Check auto-activation time
         let current_time = timestamp::now_microseconds();
