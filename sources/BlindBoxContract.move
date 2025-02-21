@@ -1092,6 +1092,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Distribute payment
         let marketplace_cut = price / 10; // 10%
+        let creator_cut = price - marketplace_cut; // 90%
 
         let dvrf_amount = 10000; 
         let dvrf_cut = 0;
@@ -1102,7 +1103,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             dvrf_cut = dvrf_amount;
         };
         marketplace_cut = marketplace_cut - dvrf_cut;
-        let creator_cut = price - marketplace_cut; // 90%
 
         // Deduct payment from the buyer
         let marketplace_cut_coins = coin::withdraw<CoinType>(buyer, marketplace_cut);
