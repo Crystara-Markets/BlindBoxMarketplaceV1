@@ -86,6 +86,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ENO_RARITY_SELECTED: u64 = 42;
     const EINVALID_AMOUNT: u64 = 43;
     const EFUNCTION_DISABLED: u64 = 44;
+    const ELOOTBOX_EMPTY: u64 = 45;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -418,8 +419,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     user: &signer,
     amount: u64
     ) acquires ResourceInfo {
-        assert!(signer::address_of(user) == @projectOwnerAdr, error::permission_denied(ENOT_AUTHORIZED));
-                let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
+        assert!((signer::address_of(user) == @projectOwnerAdr || signer::address_of(user) == @v17_resource_addr) , error::permission_denied(ENOT_AUTHORIZED));
+        let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
 
         supra_account::transfer(user, module_resource_info.signer_address, amount);
@@ -1023,6 +1024,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Fetch the lootbox
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
 
+        assert(lootbox.tokensInLootbox.length() > 0, error::invalid_state(ELOOTBOX_EMPTY));
+
         // Check auto-activation time
         let current_time = timestamp::now_microseconds();
         if (lootbox.automatically_active_at_time != 0 && current_time >= lootbox.automatically_active_at_time) {
@@ -1089,15 +1092,32 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Distribute payment
         let marketplace_cut = price / 10; // 10%
+
+        let dvrf_amount = 10000; 
+        let dvrf_cut = 0;
+        if(marketplace_cut < dvrf_amount) {
+            dvrf_cut = marketplace_cut;
+        };
+        else {
+            dvrf_cut = dvrf_amount;
+        };
+        marketplace_cut = marketplace_cut - dvrf_cut;
         let creator_cut = price - marketplace_cut; // 90%
 
         // Deduct payment from the buyer
         let marketplace_cut_coins = coin::withdraw<CoinType>(buyer, marketplace_cut);
+        let dvrf_cut_coins = coin::withdraw<CoinType>(buyer, dvrf_cut);
         let creator_cut_coins = coin::withdraw<CoinType>(buyer, creator_cut);
 
         // Deposit the coins to the creator and marketplace
         supra_account::deposit_coins(lootbox.creator, creator_cut_coins);
         supra_account::deposit_coins(@projectOwnerAdr, marketplace_cut_coins);
+
+        // Deposit the coins to the dvrf
+        let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
+        let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
+        supra_account::deposit_coins(signer::address_of(&module_resource_signer), dvrf_cut_coins);
+        deposit::deposit_fund(&module_resource_signer, dvrf_cut_coins);
 
         // Update lootbox state
         lootbox.stock = lootbox.stock - 1;
