@@ -1097,7 +1097,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let dvrf_cut = 0;
         if(marketplace_cut < dvrf_amount) {
             dvrf_cut = marketplace_cut;
-        };
+        }
         else {
             dvrf_cut = dvrf_amount;
         };
