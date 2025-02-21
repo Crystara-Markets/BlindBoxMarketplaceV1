@@ -1024,7 +1024,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Fetch the lootbox
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
 
-        assert(lootbox.tokensInLootbox.length() > 0, error::invalid_state(ELOOTBOX_EMPTY));
+        assert(vector::length(&lootbox.tokensInLootbox) > 0, error::invalid_state(ELOOTBOX_EMPTY));
 
         // Check auto-activation time
         let current_time = timestamp::now_microseconds();
@@ -1117,7 +1117,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         supra_account::deposit_coins(signer::address_of(&module_resource_signer), dvrf_cut_coins);
-        deposit::deposit_fund(&module_resource_signer, dvrf_cut_coins);
+        deposit::deposit_fund(&module_resource_signer, dvrf_cut);
 
         // Update lootbox state
         lootbox.stock = lootbox.stock - 1;
