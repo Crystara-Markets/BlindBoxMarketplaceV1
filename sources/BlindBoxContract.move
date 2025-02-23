@@ -87,6 +87,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_AMOUNT: u64 = 43;
     const EFUNCTION_DISABLED: u64 = 44;
     const ELOOTBOX_EMPTY: u64 = 45;
+    const EBULK_PURCHASE_OVERFLOW: u64 = 46;
 
     // Market Settings
     //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
@@ -993,6 +994,22 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
     }
 
+    public entry fun purchase_multiple_lootboxes<CoinType>(
+      buyer: &signer,
+      creator_addr: address,
+      collection_name: vector<u8>,
+      quantity: u64
+    ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
+
+        let overflow = 50;
+        let iter = 0;
+        while(quantity > 0) {
+            purchase_lootbox<CoinType>(buyer, creator_addr, collection_name);
+            quantity = quantity - 1;
+            iter = iter + 1;
+            assert!(iter < overflow, error::invalid_state(EBULK_PURCHASE_OVERFLOW));
+        };
+    }
 
     /// Purchase a lootbox
     public entry fun purchase_lootbox<CoinType>(
