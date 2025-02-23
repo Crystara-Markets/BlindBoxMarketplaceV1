@@ -1654,6 +1654,18 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
     }
 
+    // View function to get the remaining claimable tokens (unique, exluding quantity of each token)
+    #[view]
+    public fun get_remaining_claimable_tokens(
+        claimer_addr: address
+    ): u64 acquires UserClaimResourceInfoV2 {
+        let user_claim_resource_address = account::create_resource_address(&claimer_addr, USER_CLAIM_RESOURCE_SEED);
+        if (!exists<UserClaimResourceInfoV2>(user_claim_resource_address)) {
+            return 0
+        };
+        let claim_info = borrow_global<UserClaimResourceInfoV2>(user_claim_resource_address);
+        vector::length(&claim_info.claimable_tokens)
+    }
 
     // Claim all tokens function
 
