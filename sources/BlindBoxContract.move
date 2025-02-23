@@ -1699,7 +1699,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let claimed_tokens = vector::empty<TokenIdentifierV2>();
         let total_claimed = 0;
         let tokens_processed = 0;
-        let batch_size = 250;
+        let batch_size = 100;
 
         // Transfer all tokens
         while (!vector::is_empty(&claim_info.claimable_tokens)  && tokens_processed < batch_size) {
