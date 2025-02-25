@@ -1347,7 +1347,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let (minted_creator, minted_collection, minted_tokenname, minted_property_version) = token::get_token_id_fields(&token_minted_id);
         
         //Transfer to buyer if OPT IN is true
-        if(token::get_direct_transfer(&pending_reward.buyer)) {
+        if(token::get_direct_transfer(pending_reward.buyer)) {
             token::transfer(
                 &collection_signer, 
                 token_minted_id,
