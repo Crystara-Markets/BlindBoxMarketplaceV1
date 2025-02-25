@@ -1152,6 +1152,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         //debug::print(&b"module resource signer: ");
         assert!(signer::address_of(&module_resource_signer) == @v17_resource_addr, error::invalid_state(EINVALID_MODULE_RESOURCE_SIGNER));
 
+        //Auto Opt In To Direct Transfer for Testnet Purposes
+        token::opt_in_direct_transfer(buyer, true);
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
         let nonce = supra_vrf::rng_request(
@@ -1343,22 +1345,33 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         //return values are public fun get_token_id_fields(token_id: &TokenId): (address, String, String, u64) {
         let (minted_creator, minted_collection, minted_tokenname, minted_property_version) = token::get_token_id_fields(&token_minted_id);
+        
+        //Transfer to buyer if OPT IN is true
+        if(token::get_direct_transfer(&pending_reward.buyer)) {
+            token::transfer(
+                &collection_signer, 
+                token_minted_id,
+                &pending_reward.buyer,
+                1 //amount
+            );
+        }
+        //Add to escrow
+        else { 
+            vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
+                creator: lootbox.collection_resource_address,
+                collection: pending_reward.collection_name,
+                name: selected_token,
+                property_version: minted_property_version
+            });
 
-
-        vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
-            creator: lootbox.collection_resource_address,
-            collection: pending_reward.collection_name,
-            name: selected_token,
-            property_version: minted_property_version
-        });
-
-        // Transfer token to buyer escrow resource account
-        token::direct_transfer(
-            &collection_signer,
-            &user_claim_escrow_signer,
-            token_minted_id,
-            1 //amount
-        );
+            // Transfer token to buyer escrow resource account
+            token::direct_transfer(
+                &collection_signer,
+                &user_claim_escrow_signer,
+                token_minted_id,
+                1 //amount
+            );
+        };
 
 
         // Emit distribution event
