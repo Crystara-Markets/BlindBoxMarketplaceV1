@@ -1351,7 +1351,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             token::transfer(
                 &collection_signer, 
                 token_minted_id,
-                &pending_reward.buyer,
+                pending_reward.buyer,
                 1 //amount
             );
         }
