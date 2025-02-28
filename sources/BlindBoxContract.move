@@ -80,6 +80,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EFUNCTION_DISABLED: u64 = 44;
     const ELOOTBOX_EMPTY: u64 = 45;
     const EBULK_PURCHASE_OVERFLOW: u64 = 46;
+    const EINVALID_VRF_CALLER: u64 = 47;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -1001,8 +1002,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       quantity: u64
     ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
 
-        let overflow = 50;
+        let overflow = 5;
         let iter = 0;
+
+        let price_per_box = get_lootbox_price<CoinType>(creator_addr, collection_name);
+        let total_cost = price_per_box * quantity;
+        assert!(coin::balance<CoinType>(buyer_addr) >= total_cost, error::invalid_argument(EINSUFFICIENT_BALANCE));
+
         while(quantity > 0) {
             purchase_lootbox<CoinType>(buyer, creator_addr, collection_name);
             quantity = quantity - 1;
@@ -1246,6 +1252,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             rng_count, 
             client_seed
         );
+
+        assert!(caller_address == @v17_resource_addr, error::permission_denied(EINVALID_VRF_CALLER));
 
         // Verify we got at least one random number
         assert!(vector::length(&random_numbers) > 0, error::invalid_argument(EINVALID_VECTOR_LENGTH));
