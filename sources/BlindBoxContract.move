@@ -18,11 +18,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use supra_framework::account::{Self};
     use supra_framework::supra_account;
     use aptos_token::token::{Self};
-    //use aptos_token::property_map;
     use supra_framework::coin::{Self};
     use supra_framework::event;
     use supra_framework::timestamp;
-    use supra_framework::guid::GUID;
     //DVRF
     use supra_addr::supra_vrf;
     use supra_addr::deposit;
@@ -422,6 +420,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         user: &signer,
         contract_address: address
     ) acquires ResourceInfo {
+        
+        //Unused params reduce warnings in a no-op way
+        let _ = contract_address;
+
         assert!(signer::address_of(user) == @projectOwnerAdr, error::permission_denied(ENOT_AUTHORIZED));
 
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
@@ -460,9 +462,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       let account_addr = signer::address_of(source_account);
       let fresh_account = false;
 
-      //Unused params reduce warnings in a no-op way
-      let _ = fresh_account;
-
       //Check if Lootboxes Table Exists for Creator, If No, Init Table.
       if (!exists<Lootboxes>(account_addr)) {
         move_to(source_account, Lootboxes {
@@ -470,7 +469,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         });
         fresh_account = true;
       };
-      
+
+      //Unused params reduce warnings in a no-op way
+      let _ = fresh_account;
+
       // Convert the vectors to strings
       let collection_name_str = string::utf8(collection_name);
       let description_str = string::utf8(description);
@@ -729,11 +731,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let token_name_str = generate_token_name(token_count + 1);
 
         // Check if token with this name already exists
-        let token_data_id = token::create_token_data_id(
-            collection_resource_address,
-            collection_name_str,
-            token_name_str
-        );
         assert!(
             !token::check_tokendata_exists(collection_resource_address, collection_name_str, token_name_str),
             error::already_exists(ETOKEN_NAME_ALREADY_EXISTS)
@@ -848,7 +845,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     tokens_in_rarity
   }
 
-    //DEPRECATED
+  //DEPRECATED
   #[view]
   public fun get_tokens_in_lootbox_by_rarity(
     collection_name: vector<u8>,
@@ -857,6 +854,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
   ): vector<String> acquires Lootboxes {
     let lootboxes = borrow_global<Lootboxes>(creator);
     let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
+
+    //Unused params reduce warnings in a no-op way
+    let _ = lootbox;
 
     let deprecated_vector = vector::empty<String>();
     vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
@@ -1027,7 +1027,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let collection_name_str = string::utf8(collection_name);
 
         // Check if user has initialized their claim escrow account
-        let user_claim_seed = USER_CLAIM_RESOURCE_SEED;
         let user_claim_resource_address = account::create_resource_address(&buyer_addr, USER_CLAIM_RESOURCE_SEED);        
         if(!account::exists_at(user_claim_resource_address)){
             initialize_claim_account(buyer);
@@ -1119,6 +1118,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             dvrf_cut = dvrf_amount;
         };
         marketplace_cut = marketplace_cut - dvrf_cut;
+
+        //Unused params reduce warnings in a no-op way
+        let _ = dvrf_cut;
 
         // Deduct payment from the buyer
         let marketplace_cut_coins = coin::withdraw<CoinType>(buyer, marketplace_cut);
@@ -1343,7 +1345,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         //return values are public fun get_token_id_fields(token_id: &TokenId): (address, String, String, u64) {
-        let (minted_creator, minted_collection, minted_tokenname, minted_property_version) = token::get_token_id_fields(&token_minted_id);
+        let (_, _, _, minted_property_version) = token::get_token_id_fields(&token_minted_id);
         
         //Transfer to buyer if OPT IN is true
         if(token::get_direct_transfer(pending_reward.buyer)) {
@@ -2031,11 +2033,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let token_name_str = generate_token_name(token_count + 1);
 
             // Check if token with this name already exists
-            let token_data_id = token::create_token_data_id(
-                collection_resource_address,
-                collection_name_str,
-                token_name_str
-            );
             assert!(
                 !token::check_tokendata_exists(collection_resource_address, collection_name_str, token_name_str),
                 error::already_exists(ETOKEN_NAME_ALREADY_EXISTS)
@@ -2156,7 +2153,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         rarity_names: vector<vector<u8>>,
         rarity_weights: vector<u64>,
         show_items_on_roll: vector<bool>
-    ) acquires Lootboxes {     
+    ) acquires Lootboxes { 
         // Check lootbox doesn't already exist if table exists
         let account_addr = signer::address_of(source_account);
         let fresh_account = false;
@@ -2165,10 +2162,25 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         if (!exists<Lootboxes>(account_addr)) {
             fresh_account = true;
         };
+
         let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
         assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
         
+        //Unused params reduce warnings in a no-op way
+        let _ = description;
+        let _ = collection_uri;
+        let _ = maximum_supply;
+        let _ = price;
+        let _ = requiresKey;
+        let _ = rarity_names;
+        let _ = rarity_weights;
+        let _ = show_items_on_roll;
+        let _ = keys_collection_name;
+        let _ = keys_collection_description;
+        let _ = keys_collection_url;
+        let _ = fresh_account;
+
         assert!(false, EDEPRECATED);
     }
 
@@ -2280,6 +2292,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Set extension table values
         internal_set_lootbox_extension_string(&collection_signer, string::utf8(collection_name), string::utf8(b"url"), string::utf8(extension_url));
         internal_set_lootbox_extension_string(&collection_signer, string::utf8(collection_name), string::utf8(b"rarity_colors"), string::utf8(extension_rarity_colors));
+
+        //Unused params reduce warnings in a no-op way
+        let _ = fresh_account;
     }
 
 
@@ -2613,8 +2628,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         key: vector<u8>,
         value: vector<u8>
     ) acquires  Lootboxes {
-        
-
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let key_str = string::utf8(key);
@@ -2624,6 +2637,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        //Unused params reduce warnings in a no-op way
+        let _ = key_str;
+        let _ = value_str;
 
         assert!(false, EFUNCTION_DISABLED);
 
@@ -2644,6 +2661,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        //Unused params reduce warnings in a no-op way
+        let _ = key_str;
+        let _ = value;
 
         assert!(false, EFUNCTION_DISABLED);
 
@@ -2667,6 +2688,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
 
+        //Unused params reduce warnings in a no-op way
+        let _ = key_str;
+        let _ = value;
+
         assert!(false, EFUNCTION_DISABLED);
 
         //internal_set_lootbox_extension_u64(creator, collection_name_str, key_str, value);
@@ -2688,6 +2713,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        //Unused params reduce warnings in a no-op way
+        let _ = key_str;
+        let _ = value;
         
         assert!(false, EFUNCTION_DISABLED);
         //internal_set_lootbox_extension_u256(creator, collection_name_str, key_str, value);
@@ -2729,7 +2758,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     ) acquires Lootboxes, FixedPriceListing, LootboxExtensions {
 
         // Called first as they borrow Lootbox
-        let maxsupply = get_lootbox_maxsupply(creator_addr, collection_name);
         let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
         let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
 
@@ -2824,7 +2852,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     ) acquires Lootboxes, FixedPriceListing, LootboxExtensions {
 
         // Called first as they borrow Lootbox
-        let maxsupply = get_lootbox_maxsupply(creator_addr, collection_name);
         let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
         let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
 
