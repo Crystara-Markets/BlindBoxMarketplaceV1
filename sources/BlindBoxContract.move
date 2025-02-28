@@ -81,6 +81,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ELOOTBOX_EMPTY: u64 = 45;
     const EBULK_PURCHASE_OVERFLOW: u64 = 46;
     const EINVALID_VRF_CALLER: u64 = 47;
+    const ENO_TOKENS_AVAILABLE_TO_MINT: u64 = 48;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -1102,6 +1103,36 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Store seed in extension
             internal_set_lootbox_extension_bool(&collection_signer, collection_name_str, string::utf8(b"dynamic_seed_enabled"), true);
         };
+
+
+        let token_count = vector::length(&lootbox.tokensInLootbox);
+        let at_least_one_available = false;
+        let i = 0;
+        
+        // Iterate through all tokens in the lootbox
+        while (i < token_count) {
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+            let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
+            
+            // Get token supply from the collection
+            let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+            let token_data_id = token::create_token_data_id(
+                lootbox.collection_resource_address,
+                collection_name_str,
+                token_name
+            );
+            
+            // Check if this token has supply available
+            if (token::get_token_supply(&token_data_id) < token::get_token_maximum(&token_data_id)) {
+                at_least_one_available = true;
+                break;
+            };
+            
+            i = i + 1;
+        };
+        
+        // Assert that at least one token is available for minting
+        assert!(at_least_one_available, error::invalid_state(ENO_TOKENS_AVAILABLE_TO_MINT));
 
         // Check if price is set
         assert!(exists<FixedPriceListing<CoinType>>(lootbox.priceResourceAddress), error::not_found(EPRICE_NOT_SET_OR_INVALID_COIN_TYPE));
