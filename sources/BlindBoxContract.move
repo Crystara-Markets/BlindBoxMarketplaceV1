@@ -1001,13 +1001,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       collection_name: vector<u8>,
       quantity: u64
     ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
-
+        
         let overflow = 5;
         let iter = 0;
 
-        let price_per_box = get_lootbox_price<CoinType>(creator_addr, collection_name);
+        let price_per_box = get_lootbox_price<CoinType>(creator_addr, string::utf8(collection_name));
         let total_cost = price_per_box * quantity;
-        assert!(coin::balance<CoinType>(buyer_addr) >= total_cost, error::invalid_argument(EINSUFFICIENT_BALANCE));
+        assert!(coin::balance<CoinType>(signer::address_of(buyer)) >= total_cost, error::invalid_argument(EINSUFFICIENT_BALANCE));
 
         while(quantity > 0) {
             purchase_lootbox<CoinType>(buyer, creator_addr, collection_name);
