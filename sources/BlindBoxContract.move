@@ -857,6 +857,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     //Unused params reduce warnings in a no-op way
     let _ = lootbox;
+    let _ = rarity;
 
     let deprecated_vector = vector::empty<String>();
     vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
@@ -1111,6 +1112,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let dvrf_amount = 10000; 
         let dvrf_cut = 0;
+
+        //Unused params reduce warnings in a no-op way
+        let _ = dvrf_cut;
+
+        //Check if marketplace cut is > than dvrf amount else use marketplace cut for dvrf deduction
         if(marketplace_cut < dvrf_amount) {
             dvrf_cut = marketplace_cut;
         }
@@ -1118,9 +1124,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             dvrf_cut = dvrf_amount;
         };
         marketplace_cut = marketplace_cut - dvrf_cut;
-
-        //Unused params reduce warnings in a no-op way
-        let _ = dvrf_cut;
 
         // Deduct payment from the buyer
         let marketplace_cut_coins = coin::withdraw<CoinType>(buyer, marketplace_cut);
