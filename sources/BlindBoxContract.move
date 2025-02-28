@@ -1,16 +1,12 @@
 module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     
-    /**
-    *
-    * Module Upgrade Notes:
-    *
-    * - Change the fun init_module resource seed to "LOOTBOX_RESOURCE_V(NEW VERSION)"
-    * - Change the callback module name in purchase_lootbox to "BlindBoxContract_Crystara_TestV(NEW VERSION)"
-    * - Update the BlindBoxAdmin Contract to use the new version seed
-    *
-    *
-    *
-    */
+    //
+    // Module Upgrade Notes:
+    //
+    // - Change the fun init_module resource seed to "LOOTBOX_RESOURCE_V(NEW VERSION)"
+    // - Change the callback module name in purchase_lootbox to "BlindBoxContract_Crystara_TestV(NEW VERSION)"
+    // - Update the BlindBoxAdmin Contract to use the new version seed
+    //
 
     use std::signer;
     use std::vector;
@@ -22,7 +18,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use supra_framework::account::{Self};
     use supra_framework::supra_account;
     use aptos_token::token::{Self};
-    use aptos_token::property_map;
+    //use aptos_token::property_map;
     use supra_framework::coin::{Self};
     use supra_framework::event;
     use supra_framework::timestamp;
@@ -40,9 +36,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
     /// Error Codes
-    /// Action not authorized because the signer is not the admin of this module
     const ENOT_AUTHORIZED: u64 = 1;
-    /// Collection already exists
     const ECOLLECTION_EXISTS: u64 = 2;
     const EINSUFFICIENT_BALANCE: u64 = 3;
     const ELOOTBOX_NOT_FOUND: u64 = 4;
@@ -55,8 +49,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ETOKEN_NAME_ALREADY_EXISTS: u64 = 11;
     const EALREADY_INITIALIZED: u64 = 12;
     const EYOU_ARE_NOT_PROJECT_OWNER: u64 = 13;
-    const EINVALID_VECTOR_LENGTH: u64 = 14;  // Empty vectors or invalid lengths
-    const EUNSAFE_NUMBER_CONVERSION: u64 = 15; // Overflow or unsafe conversion
+    const EINVALID_VECTOR_LENGTH: u64 = 14;
+    const EUNSAFE_NUMBER_CONVERSION: u64 = 15;
     const ELOOTBOX_NOTEXISTS: u64 = 16;
     const EPRICE_NOT_SET_OR_INVALID_COIN_TYPE: u64 = 17;
     const EPENDING_REWARDS_NOT_INITIALIZED: u64 = 18;
@@ -89,10 +83,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ELOOTBOX_EMPTY: u64 = 45;
     const EBULK_PURCHASE_OVERFLOW: u64 = 46;
 
-    // Market Settings
-    //use projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV1::get_resource_address as adminResourceAddressSettings;
-    
-    //Event Types
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
         creator: address,
@@ -457,12 +447,21 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       keys_collection_url: vector<u8>,
     ) acquires Lootboxes {
 
+    // Unused params reduce warnings in a no-op way
+    let _ = initial_stock;
+    let _ = max_stock;
+    let _ = keys_collection_description;
+    let _ = keys_collection_url;
+
     if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
         assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
     };
 
       let account_addr = signer::address_of(source_account);
       let fresh_account = false;
+
+      //Unused params reduce warnings in a no-op way
+      let _ = fresh_account;
 
       //Check if Lootboxes Table Exists for Creator, If No, Init Table.
       if (!exists<Lootboxes>(account_addr)) {
