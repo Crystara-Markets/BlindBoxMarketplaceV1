@@ -1642,7 +1642,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             if(i > 0) {
                 i = i - 1;
             }else {
-                break;
+                break
             };
         };
         
