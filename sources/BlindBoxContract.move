@@ -1644,7 +1644,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // If no tokens found in any rarity, abort
         //assert!(false, error::not_found(ENO_TOKENS_AVAILABLE));
-        selected_rarity // This line will never be reached due to the assert above
+        return string::utf8(b"") // This line will never be reached due to the assert above
     }
 
     public entry fun set_lootbox_price<CoinType>(
