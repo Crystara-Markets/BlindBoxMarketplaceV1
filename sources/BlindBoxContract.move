@@ -1345,7 +1345,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 }
             );
             return;
-        }
+        };
 
         // Get tokens of that rarity
         let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
