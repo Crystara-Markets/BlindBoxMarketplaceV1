@@ -1123,7 +1123,24 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
             
             // Check if this token has supply available
-            if (token::get_token_supply(lootbox.collection_resource_address, &token_data_id) < token::get_tokendata_maximum(&token_data_id)) {
+            let curSupply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
+
+            // If the token has a current supply, check against max supply.
+            if (curSupply != option::none()) {
+                let maxSupply = token::get_tokendata_maximum(token_data_id);
+                if (maxSupply != 0) {
+                    let curSupplyValue = *option::borrow(&curSupply);
+                    if(curSupplyValue < maxSupply) {
+                        at_least_one_available = true;
+                        break;
+                    };
+                // Max supply == 0 means infinite supply.
+                }else {
+                    at_least_one_available = true;
+                    break;
+                };
+            // If the token has no current supply, it is available to mint / has no max supply.
+            }else {
                 at_least_one_available = true;
                 break;
             };
