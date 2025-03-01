@@ -1330,6 +1330,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // Select rarity based on weights
         let selected_rarity = select_rarity(lootbox, random_num);
+        
+        //Unused params reduce warnings in a no-op way
+        let _ = selected_rarity;
+
         if (selected_rarity == string::utf8(b"")) {
             // Emit event that no token was found
             event::emit(
@@ -1344,11 +1348,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     timestamp: timestamp::now_microseconds()
                 }
             );
-            return;
+            return
         };
 
         // Get tokens of that rarity
         let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
+
+        // Unused params reduce warnings in a no-op way
+        let _ = tokens_of_rarity;
     
         // Verify we have tokens to select from
         let len = vector::length(&tokens_of_rarity);
