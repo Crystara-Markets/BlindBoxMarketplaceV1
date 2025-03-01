@@ -1330,7 +1330,23 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // Select rarity based on weights
         let selected_rarity = select_rarity(lootbox, random_num);
-        
+        if (selected_rarity == string::utf8(b"")) {
+            // Emit event that no token was found
+            event::emit(
+                LootboxRewardDistributedEvent {
+                    nonce,
+                    buyer: pending_reward.buyer,
+                    creator: pending_reward.creator,
+                    collection_name: pending_reward.collection_name,
+                    selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
+                    selected_rarity: selected_rarity,
+                    random_number: random_num,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
+            return;
+        }
+
         // Get tokens of that rarity
         let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
     
@@ -1595,7 +1611,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         if (string::length(&selected_rarity) == 0) {
-            assert!(false, error::not_found(ENO_RARITY_SELECTED));
+            //assert!(false, error::not_found(ENO_RARITY_SELECTED));
+            return string::utf8(b"")
         };
         
         // Check if selected rarity has available tokens
@@ -1619,7 +1636,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         // If no tokens found in any rarity, abort
-        assert!(false, error::not_found(ENO_TOKENS_AVAILABLE));
+        //assert!(false, error::not_found(ENO_TOKENS_AVAILABLE));
         selected_rarity // This line will never be reached due to the assert above
     }
 
