@@ -1639,7 +1639,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     return rarity
                 };
             };
-            i = i - 1;
+            if(i > 0) {
+                i = i - 1;
+            }else {
+                break;
+            };
         };
         
         // If no tokens found in any rarity, abort
