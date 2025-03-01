@@ -746,9 +746,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
 
         // Set up token properties including rarity
-        let property_keys = vector[string::utf8(b"rarity") , string::utf8(b"BURNABLE_BY_OWNER")];
-        let property_values = vector[rarity, b"true"];
-        let property_types = vector[string::utf8(b"String"), string::utf8(b"bool")];
+        let property_keys = vector[string::utf8(b"rarity")];
+        let property_values = vector[rarity];
+        let property_types = vector[string::utf8(b"String")];
 
         //Token Mutability Configuration
          //Max Supply, URI, Royalty, Description, Properties
@@ -1123,7 +1123,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
             
             // Check if this token has supply available
-            if (token::get_token_supply(&token_data_id) < token::get_token_maximum(&token_data_id)) {
+            if (token::get_token_supply(lootbox.collection_resource_address, &token_data_id) < token::get_tokendata_maximum(&token_data_id)) {
                 at_least_one_available = true;
                 break;
             };
@@ -2088,9 +2088,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
 
             // Set up token properties including rarity
-            let property_keys = vector[string::utf8(b"rarity") , string::utf8(b"BURNABLE_BY_OWNER")];
-            let property_values = vector[rarity, b"true"];
-            let property_types = vector[string::utf8(b"String"), string::utf8(b"bool")];
+            let property_keys = vector[string::utf8(b"rarity")];
+            let property_values = vector[rarity];
+            let property_types = vector[string::utf8(b"String")];
 
             // Token Mutability Configuration
             let mutability_settings = vector[false, true, true, true, true];
