@@ -1132,17 +1132,17 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     let curSupplyValue = *option::borrow(&curSupply);
                     if(curSupplyValue < maxSupply) {
                         at_least_one_available = true;
-                        break;
+                        break
                     };
                 // Max supply == 0 means infinite supply.
                 }else {
                     at_least_one_available = true;
-                    break;
+                    break
                 };
             // If the token has no current supply, it is available to mint / has no max supply.
             }else {
                 at_least_one_available = true;
-                break;
+                break
             };
             
             i = i + 1;
