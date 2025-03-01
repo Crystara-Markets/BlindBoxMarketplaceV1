@@ -1333,12 +1333,27 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // Get tokens of that rarity
         let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
-        
-        // Select random token from that rarity
-        let len = vector::length(&tokens_of_rarity);
     
         // Verify we have tokens to select from
-        assert!(len > 0, error::invalid_state(EINVALID_VECTOR_LENGTH));
+        let len = vector::length(&tokens_of_rarity);
+        if (len == 0) {
+            // Emit event that no token was found
+            event::emit(
+                LootboxRewardDistributedEvent {
+                    nonce,
+                    buyer: pending_reward.buyer,
+                    creator: pending_reward.creator,
+                    collection_name: pending_reward.collection_name,
+                    selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
+                    selected_rarity: selected_rarity,
+                    random_number: random_num,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
+            
+            // Return early - pending reward is already removed from the table
+            return
+        };
         
         // Safe conversion: len is guaranteed to fit in u256
         let len_u256 = (len as u256);
