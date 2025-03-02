@@ -1164,7 +1164,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let marketplace_cut = price / 10; // 10%
         let creator_cut = price - marketplace_cut; // 90%
 
-        let dvrf_amount = 10000; 
+        let dvrf_amount = 1000000; 
         let dvrf_cut = 0;
 
         //Unused params reduce warnings in a no-op way
