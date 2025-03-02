@@ -674,37 +674,37 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     rarity_weights: vector<u64>,
     show_items_on_roll: vector<bool>,
     rarity_colors: vector<u8>  // New parameter for colors
-) acquires Lootboxes, LootboxExtensions {
-    let owner_addr = signer::address_of(collection_owner);
-    let lootbox_name_str = string::utf8(lootbox_name);
-    
-    // First call the original set_rarities function
-    set_rarities(
-        collection_owner,
-        lootbox_name,
-        rarity_names,
-        rarity_weights,
-        show_items_on_roll
-    );
-    
-    // Get the lootbox to access its resource account
-    let lootboxes = borrow_global<Lootboxes>(owner_addr);
-    let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // First call the original set_rarities function
+        set_rarities(
+            collection_owner,
+            lootbox_name,
+            rarity_names,
+            rarity_weights,
+            show_items_on_roll
+        );
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
 
-    assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-    
-    // Create resource signer to set extension
-    let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-    
-    // Set the rarity colors in extensions
-    internal_set_lootbox_extension_string(
-        &resource_signer,
-        lootbox_name_str,
-        string::utf8(b"rarity_colors"),
-        string::utf8(rarity_colors)
-    );
-    
-}
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the rarity colors in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"rarity_colors"),
+            string::utf8(rarity_colors)
+        );
+        
+    }
 
 
 
@@ -3127,6 +3127,168 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
     }
 
+
+    public entry fun set_lootboxsocial_twitter(
+        collection_owner: &signer,
+        lootbox_name: vector<u8>,
+        twitter_url: vector<u8>
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the twitter URL in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"social_twitter"),
+            string::utf8(twitter_url)
+        );
+    }
+
+    public entry fun set_lootboxsocial_youtube(
+        collection_owner: &signer,
+        lootbox_name: vector<u8>,
+        youtube_url: vector<u8>
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the youtube URL in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"social_youtube"),
+            string::utf8(youtube_url)
+        );
+    }
+
+    public entry fun set_lootboxsocial_steam(
+        collection_owner: &signer,
+        lootbox_name: vector<u8>,
+        steam_url: vector<u8>
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the steam URL in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"social_steam"),
+            string::utf8(steam_url)
+        );
+    }
+
+    public entry fun set_lootboxsocial_epicgames(
+        collection_owner: &signer,
+        lootbox_name: vector<u8>,
+        epicgames_url: vector<u8>
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the epicgames URL in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"social_epicgames"),
+            string::utf8(epicgames_url)
+        );
+    }
+
+    public entry fun set_lootboxsocial_twitch(
+        collection_owner: &signer,
+        lootbox_name: vector<u8>,
+        twitch_url: vector<u8>
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the twitch URL in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"social_twitch"),
+            string::utf8(twitch_url)
+        );
+    }
+
+    public entry fun set_lootboxsocial_website(
+        collection_owner: &signer,
+        lootbox_name: vector<u8>,
+        website_url: vector<u8>
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(collection_owner);
+        let lootbox_name_str = string::utf8(lootbox_name);
+        
+        // Get the lootbox to access its resource account
+        let lootboxes = borrow_global<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Create resource signer to set extension
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+        
+        // Set the website URL in extensions
+        internal_set_lootbox_extension_string(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(b"social_website"),
+            string::utf8(website_url)
+        );
+    }
 
 
 }
