@@ -1478,20 +1478,33 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
         let count = 0u64;
         let i = 0;
-        let len = vector::length(&lootbox.token_names);
+        let len = vector::length(&lootbox.tokensInLootbox);
         
         while (i < len) {
-            let token_name = *vector::borrow(&lootbox.token_names, i);
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                // Create token data id directly without storing
+                // Create token data id
                 let token_data_id = token::create_token_data_id(
                     lootbox.collection_resource_address,
                     lootbox.collection_name,
                     token_name
                 );
                 
-                // Check if token still has available supply
-                if (token::get_token_supply(&token_data_id) < token::get_token_maximum(&token_data_id)) {
+                // Check if max supply is reached
+                let cur_supply = token::get_token_supply(&token_data_id);
+                if (option::is_some(&cur_supply)) {
+                    let max_supply = token::get_tokendata_maximum(&token_data_id);
+                    if (max_supply != 0) {
+                        let cur_supply_value = *option::borrow(&cur_supply);
+                        if (cur_supply_value < max_supply) {
+                            count = count + 1;
+                        };
+                    } else {
+                        // If max_supply is 0 (unlimited), count the token
+                        count = count + 1;
+                    };
+                } else {
+                    // If no supply yet, token is available
                     count = count + 1;
                 };
             };
@@ -1504,20 +1517,33 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     fun get_token_at_index(lootbox: &Lootbox, rarity: String, target_index: u64): String {
         let current_index = 0u64;
         let i = 0;
-        let len = vector::length(&lootbox.token_names);
+        let len = vector::length(&lootbox.tokensInLootbox);
         
         while (i < len) {
-            let token_name = *vector::borrow(&lootbox.token_names, i);
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                // Create token data id directly without storing
+                // Create token data id
                 let token_data_id = token::create_token_data_id(
                     lootbox.collection_resource_address,
                     lootbox.collection_name,
                     token_name
                 );
                 
-                // Only count tokens that haven't reached max supply
-                if (token::get_token_supply(&token_data_id) < token::get_token_maximum(&token_data_id)) {
+                // Check if max supply is reached
+                let cur_supply = token::get_token_supply(&token_data_id);
+                let max_supply_reached = false;
+                
+                if (option::is_some(&cur_supply)) {
+                    let max_supply = token::get_tokendata_maximum(&token_data_id);
+                    if (max_supply != 0) {
+                        let cur_supply_value = *option::borrow(&cur_supply);
+                        if (cur_supply_value >= max_supply) {
+                            max_supply_reached = true;
+                        };
+                    };
+                };
+                
+                if (!max_supply_reached) {
                     if (current_index == target_index) {
                         return token_name
                     };
