@@ -1323,7 +1323,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         random_num: u256,
         buyer: address
-    ) acquires PendingRewards, Lootboxes, UserClaimResourceInfoV2, LootboxExtensions {
+    ) acquires  Lootboxes, UserClaimResourceInfoV2, LootboxExtensions {
 
             assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
 
