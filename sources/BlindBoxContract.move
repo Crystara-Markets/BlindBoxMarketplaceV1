@@ -1318,13 +1318,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     //DO NOT RELEASE TO MAINNET
     public entry fun module_owner_force_dvrf_distribution(
+        signer: &signer,
         creator_addr: address,
         collection_name: vector<u8>,
         random_num: u256,
         buyer: address
     ) acquires PendingRewards, Lootboxes, UserClaimResourceInfoV2, LootboxExtensions {
 
-            assert!(caller_address == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
+            assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
 
             let random_numbers = vector[];
             vector::push_back(&mut random_numbers, random_num);
@@ -1333,15 +1334,15 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             event::emit(
                 VRFCallbackReceivedEvent {
                     nonce,
-                    caller_address,
+                    caller_address: signer::address_of(signer),
                     random_numbers: random_numbers,
                     timestamp: timestamp::now_microseconds()
                 }
             );
 
             // Get lootbox
-            let lootboxes = borrow_global_mut<Lootboxes>(pending_reward.creator);
-            let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, pending_reward.collection_name);
+            let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
+            let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
             
             // Select rarity based on weights
             let selected_rarity = select_rarity(lootbox, random_num);
@@ -1353,10 +1354,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 // Emit event that no token was found
                 event::emit(
                     LootboxRewardDistributedEvent {
-                        nonce,
-                        buyer: pending_reward.buyer,
-                        creator: pending_reward.creator,
-                        collection_name: pending_reward.collection_name,
+                        nonce: 0,
+                        buyer: buyer,
+                        creator: creator_addr,
+                        collection_name: string::utf8(collection_name),
                         selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
                         selected_rarity: selected_rarity,
                         random_number: random_num,
@@ -1378,10 +1379,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 // Emit event that no token was found
                 event::emit(
                     LootboxRewardDistributedEvent {
-                        nonce,
-                        buyer: pending_reward.buyer,
-                        creator: pending_reward.creator,
-                        collection_name: pending_reward.collection_name,
+                        nonce: 0,
+                        buyer: buyer,
+                        creator: creator_addr,
+                        collection_name: string::utf8(collection_name),
                         selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
                         selected_rarity: selected_rarity,
                         random_number: random_num,
@@ -1411,12 +1412,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Create token data id
             let token_data_id = token::create_token_data_id(
                 lootbox.collection_resource_address,
-                pending_reward.collection_name,
+                string::utf8(collection_name),
                 selected_token
             );
 
             let user_claim_seed = USER_CLAIM_RESOURCE_SEED;
-            let user_claim_resource_address = account::create_resource_address(&pending_reward.buyer, user_claim_seed);
+            let user_claim_resource_address = account::create_resource_address(&buyer, user_claim_seed);
             // If user claim resource account doesn't exist, create it
             assert!(account::exists_at(user_claim_resource_address), error::not_found(ERESOURCE_ESCROW_CLAIM_ACCOUNT_NOT_EXISTS)); 
             // Get the resource account signer using stored capability
@@ -1432,7 +1433,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
 
             // Upgrading SFT/NFT to NFT based on Random Seed
-            let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, pending_reward.collection_name, string::utf8(b"dynamic_seed_enabled"));
+            let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, string::utf8(collection_name), string::utf8(b"dynamic_seed_enabled"));
             if (dynamic_seed == option::some(true)) {
                 let property_keys = vector[
                     string::utf8(b"rarity"),
@@ -1460,11 +1461,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let (_, _, _, minted_property_version) = token::get_token_id_fields(&token_minted_id);
             
             //Transfer to buyer if OPT IN is true
-            if(token::get_direct_transfer(pending_reward.buyer)) {
+            if(token::get_direct_transfer(buyer)) {
                 token::transfer(
                     &collection_signer, 
                     token_minted_id,
-                    pending_reward.buyer,
+                    buyer,
                     1 //amount
                 );
             }
@@ -1472,7 +1473,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             else { 
                 vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
                     creator: lootbox.collection_resource_address,
-                    collection: pending_reward.collection_name,
+                    collection: string::utf8(collection_name),
                     name: selected_token,
                     property_version: minted_property_version
                 });
@@ -1490,10 +1491,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Emit distribution event
             event::emit(
                 LootboxRewardDistributedEvent {
-                    nonce,
-                    buyer: pending_reward.buyer,
-                    creator: pending_reward.creator,
-                    collection_name: pending_reward.collection_name,
+                    nonce: 0,
+                    buyer: buyer,
+                    creator: creator_addr,
+                    collection_name: string::utf8(collection_name),
                     selected_token: selected_token,
                     selected_rarity: selected_rarity,
                     random_number: random_num,
