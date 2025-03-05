@@ -1270,7 +1270,36 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: String,
         random_num: u256,
     ): (String, String, u256) acquires Lootboxes {
-        simulate_dvrf_result(random_num, creator_addr, bcs::to_bytes(&collection_name))
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        // Select rarity based on weights
+        let selected_rarity = select_rarity(lootbox, random_num);
+        
+        // If no valid rarity found, return empty strings
+        if (selected_rarity == string::utf8(b"")) {
+            return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+        };
+
+        // Get tokens of that rarity
+        let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
+        
+        // If no tokens in that rarity, return empty token name
+        let len = vector::length(&tokens_of_rarity);
+        if (len == 0) {
+            return (selected_rarity, string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+        };
+        
+        // Calculate token index using same logic as receive_dvrf
+        let len_u256 = (len as u256);
+        let token_index = random_num % len_u256;
+        let token_index_u64 = (token_index as u64);
+        
+        // Get selected token
+        let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+        
+        // Return tuple of (selected_rarity, selected_token, random_number)
+        (selected_rarity, selected_token, random_num)
     }
 
     #[view]
