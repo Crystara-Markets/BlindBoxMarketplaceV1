@@ -83,6 +83,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_VRF_CALLER: u64 = 47;
     const ENO_TOKENS_AVAILABLE_TO_MINT: u64 = 48;
     const EDEBUG_POINT: u64 = 49;
+    const EINVALID_TOKEN_INDEX: u64 = 50;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -1478,10 +1479,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
         let count = 0u64;
         let i = 0;
-        let len = vector::length(&lootbox.token_names);
+        let len = vector::length(&lootbox.tokensInLootbox);
         
         while (i < len) {
-            let token_name = *vector::borrow(&lootbox.token_names, i);
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
                 count = count + 1;
             };
@@ -1494,10 +1495,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     fun get_token_at_index(lootbox: &Lootbox, rarity: String, target_index: u64): String {
         let current_index = 0u64;
         let i = 0;
-        let len = vector::length(&lootbox.token_names);
+        let len = vector::length(&lootbox.tokensInLootbox);
         
         while (i < len) {
-            let token_name = *vector::borrow(&lootbox.token_names, i);
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
                 if (current_index == target_index) {
                     return token_name
