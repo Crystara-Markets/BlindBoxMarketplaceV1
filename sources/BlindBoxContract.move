@@ -1264,7 +1264,16 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         timestamp::now_microseconds()
     }
 
-        #[view]
+    #[view]
+    public fun simulate_dvrf_resultV2(
+        creator_addr: address,
+        collection_name: String,
+        random_num: u256,
+    ): (String, String, u256) acquires Lootboxes {
+        simulate_dvrf_result(creator_addr, string::utf8(collection_name), random_num)
+    }
+
+    #[view]
     public fun simulate_dvrf_result(
         random_num: u256,
         creator_addr: address,
