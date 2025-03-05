@@ -1401,6 +1401,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             // Upgrading SFT/NFT to NFT based on Random Seed
             let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, string::utf8(collection_name), string::utf8(b"dynamic_seed_enabled"));
+
             
             if (dynamic_seed == option::some(true)) {
                 let property_keys = vector[
@@ -1477,12 +1478,22 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
         let count = 0u64;
         let i = 0;
-        let len = vector::length(&lootbox.tokensInLootbox);
+        let len = vector::length(&lootbox.token_names);
         
         while (i < len) {
-            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+            let token_name = *vector::borrow(&lootbox.token_names, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                count = count + 1;
+                // Create token data id directly without storing
+                let token_data_id = token::create_token_data_id(
+                    lootbox.collection_resource_address,
+                    lootbox.collection_name,
+                    token_name
+                );
+                
+                // Check if token still has available supply
+                if (token::get_token_supply(&token_data_id) < token::get_token_maximum(&token_data_id)) {
+                    count = count + 1;
+                };
             };
             i = i + 1;
         };
@@ -1493,15 +1504,25 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     fun get_token_at_index(lootbox: &Lootbox, rarity: String, target_index: u64): String {
         let current_index = 0u64;
         let i = 0;
-        let len = vector::length(&lootbox.tokensInLootbox);
+        let len = vector::length(&lootbox.token_names);
         
         while (i < len) {
-            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+            let token_name = *vector::borrow(&lootbox.token_names, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                if (current_index == target_index) {
-                    return token_name
+                // Create token data id directly without storing
+                let token_data_id = token::create_token_data_id(
+                    lootbox.collection_resource_address,
+                    lootbox.collection_name,
+                    token_name
+                );
+                
+                // Only count tokens that haven't reached max supply
+                if (token::get_token_supply(&token_data_id) < token::get_token_maximum(&token_data_id)) {
+                    if (current_index == target_index) {
+                        return token_name
+                    };
+                    current_index = current_index + 1;
                 };
-                current_index = current_index + 1;
             };
             i = i + 1;
         };
