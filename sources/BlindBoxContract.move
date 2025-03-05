@@ -1435,6 +1435,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             // Upgrading SFT/NFT to NFT based on Random Seed
             let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, string::utf8(collection_name), string::utf8(b"dynamic_seed_enabled"));
+            // Suppose to fail
+            assert!(signer::address_of(&collection_signer) == @projectOwnerAdr, error::not_found(EDEBUG_POINT));
+            
             if (dynamic_seed == option::some(true)) {
                 let property_keys = vector[
                     string::utf8(b"rarity"),
@@ -1457,9 +1460,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     property_types,
                 );
             };
-
-                                    // Suppose to fail
-            assert!(signer::address_of(&collection_signer) == @projectOwnerAdr, error::not_found(EDEBUG_POINT));
 
             //return values are public fun get_token_id_fields(token_id: &TokenId): (address, String, String, u64) {
             let (_, _, _, minted_property_version) = token::get_token_id_fields(&token_minted_id);
