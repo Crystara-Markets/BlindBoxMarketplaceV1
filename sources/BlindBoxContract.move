@@ -1343,7 +1343,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             // Get lootbox
             let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-            let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
+            let collection_name_str = string::utf8(collection_name);
+            let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
             
             // Select rarity based on weights
             let selected_rarity = select_rarity(lootbox, random_num);
@@ -1353,59 +1354,23 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             if (selected_rarity == string::utf8(b"")) {
                 // Emit event that no token was found
-                event::emit(
-                    LootboxRewardDistributedEvent {
-                        nonce: 0,
-                        buyer: buyer,
-                        creator: creator_addr,
-                        collection_name: string::utf8(collection_name),
-                        selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
-                        selected_rarity: selected_rarity,
-                        random_number: random_num,
-                        timestamp: timestamp::now_microseconds()
-                    }
-                );
+                emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
                 return
             };
 
             // Get tokens of that rarity
-            let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
-
-            // Unused params reduce warnings in a no-op way
-            let _ = tokens_of_rarity;
-        
-            // Verify we have tokens to select from
-            let len = vector::length(&tokens_of_rarity);
-            if (len == 0) {
-                // Emit event that no token was found
-                event::emit(
-                    LootboxRewardDistributedEvent {
-                        nonce: 0,
-                        buyer: buyer,
-                        creator: creator_addr,
-                        collection_name: string::utf8(collection_name),
-                        selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
-                        selected_rarity: selected_rarity,
-                        random_number: random_num,
-                        timestamp: timestamp::now_microseconds()
-                    }
-                );
-                
-                // Return early - pending reward is already removed from the table
+            let token_count = get_rarity_token_count(lootbox, selected_rarity);
+            if (token_count == 0) {
+                emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
                 return
             };
             
-            // Safe conversion: len is guaranteed to fit in u256
-            let len_u256 = (len as u256);
-            
-            // Calculate token index using full u256 randomness
-            let token_index = random_num % len_u256;
-            
-            // Safe conversion back to u64: guaranteed to be less than len
+             // Calculate token index using full u256 randomness
+            let token_index = random_num % (token_count as u256);
             let token_index_u64 = (token_index as u64);
-            assert!(token_index_u64 < len, error::invalid_state(EUNSAFE_NUMBER_CONVERSION));
             
-            let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+            // Get only the selected token instead of the full array
+            let selected_token = get_token_at_index(lootbox, selected_rarity, token_index_u64);
 
             // Get collection signer
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
@@ -1507,6 +1472,65 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
 
         }
+
+    
+        // Helper function to get token count for a rarity without loading all tokens
+    fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
+        let count = 0u64;
+        let i = 0;
+        let len = vector::length(&lootbox.token_names);
+        
+        while (i < len) {
+            let token_name = *vector::borrow(&lootbox.token_names, i);
+            if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
+                count = count + 1;
+            };
+            i = i + 1;
+        };
+        count
+    }
+
+    // Helper function to get specific token at index for a rarity
+    fun get_token_at_index(lootbox: &Lootbox, rarity: String, target_index: u64): String {
+        let current_index = 0u64;
+        let i = 0;
+        let len = vector::length(&lootbox.token_names);
+        
+        while (i < len) {
+            let token_name = *vector::borrow(&lootbox.token_names, i);
+            if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
+                if (current_index == target_index) {
+                    return token_name
+                };
+                current_index = current_index + 1;
+            };
+            i = i + 1;
+        };
+        abort error::invalid_state(EINVALID_TOKEN_INDEX)
+    }
+
+    // Helper function to emit no token found event
+    fun emit_no_token_event(
+        nonce: u64,
+        buyer: address,
+        creator: address,
+        collection_name: String,
+        selected_rarity: String,
+        random_number: u256
+    ) {
+        event::emit(
+            LootboxRewardDistributedEvent {
+                nonce,
+                buyer,
+                creator,
+                collection_name,
+                selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
+                selected_rarity,
+                random_number,
+                timestamp: timestamp::now_microseconds()
+            }
+        );
+    }
         
     
 
