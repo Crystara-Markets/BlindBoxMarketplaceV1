@@ -1474,9 +1474,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         }
 
 
-    // Helper function to get token count for a rarity without loading all tokens
-        // Helper function to get token count for a rarity without loading all tokens
-        // Helper function to get token count for a rarity without loading all tokens
+       // Helper function to get token count for a rarity without loading all tokens
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
         let count = 0u64;
         let i = 0;
@@ -1491,14 +1489,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     token_name
                 );
                 
-                // Simplified supply check - combine operations
-                if (let Some(cur_supply) = token::get_token_supply(lootbox.collection_resource_address, token_data_id)) {
+                // Simplified supply check
+                let cur_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
+                if (option::is_none(&cur_supply) || {
                     let max_supply = token::get_tokendata_maximum(token_data_id);
-                    if (max_supply == 0 || *option::borrow(&cur_supply) < max_supply) {
-                        count = count + 1;
-                    };
-                } else {
-                    // No supply yet means token is available
+                    max_supply == 0 || *option::borrow(&cur_supply) < max_supply
+                }) {
                     count = count + 1;
                 };
             };
@@ -1522,12 +1518,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     token_name
                 );
                 
-                // Simplified supply check - combine operations
-                let is_available = if (let Some(cur_supply) = token::get_token_supply(lootbox.collection_resource_address, token_data_id)) {
+                // Simplified supply check
+                let cur_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
+                let is_available = option::is_none(&cur_supply) || {
                     let max_supply = token::get_tokendata_maximum(token_data_id);
                     max_supply == 0 || *option::borrow(&cur_supply) < max_supply
-                } else {
-                    true // No supply yet means token is available
                 };
                 
                 if (is_available) {
