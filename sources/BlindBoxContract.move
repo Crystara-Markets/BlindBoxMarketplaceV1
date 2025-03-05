@@ -1270,7 +1270,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: String,
         random_num: u256,
     ): (String, String, u256) acquires Lootboxes {
-        simulate_dvrf_result(creator_addr, string::utf8(collection_name), random_num)
+        simulate_dvrf_result(creator_addr, bcs::to_bytes(&collection_name), random_num)
     }
 
     #[view]
