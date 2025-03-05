@@ -1333,7 +1333,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Emit VRF callback event
             event::emit(
                 VRFCallbackReceivedEvent {
-                    nonce,
+                    nonce: 0,
                     caller_address: signer::address_of(signer),
                     random_numbers: random_numbers,
                     timestamp: timestamp::now_microseconds()
