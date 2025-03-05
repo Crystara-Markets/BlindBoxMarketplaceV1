@@ -1473,8 +1473,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         }
 
-    
-        // Helper function to get token count for a rarity without loading all tokens
+
+    // Helper function to get token count for a rarity without loading all tokens
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
         let count = 0u64;
         let i = 0;
@@ -1482,29 +1482,29 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         while (i < len) {
             let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
-            if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                // Create token data id
+            let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
+            
+            if (token_rarity == rarity) {
                 let token_data_id = token::create_token_data_id(
                     lootbox.collection_resource_address,
-                    lootbox.collection_name,
+                    lootbox.collectionName,
                     token_name
                 );
                 
-                // Check if max supply is reached
-                let cur_supply = token::get_token_supply(&token_data_id);
-                if (option::is_some(&cur_supply)) {
-                    let max_supply = token::get_tokendata_maximum(&token_data_id);
+                let max_supply_reached = false;
+                let cur_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
+                
+                if (cur_supply != option::none()) {
+                    let max_supply = token::get_tokendata_maximum(token_data_id);
                     if (max_supply != 0) {
                         let cur_supply_value = *option::borrow(&cur_supply);
-                        if (cur_supply_value < max_supply) {
-                            count = count + 1;
+                        if (cur_supply_value >= max_supply) {
+                            max_supply_reached = true;
                         };
-                    } else {
-                        // If max_supply is 0 (unlimited), count the token
-                        count = count + 1;
                     };
-                } else {
-                    // If no supply yet, token is available
+                };
+                
+                if (!max_supply_reached) {
                     count = count + 1;
                 };
             };
@@ -1521,20 +1521,20 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         while (i < len) {
             let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
-            if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                // Create token data id
+            let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
+            
+            if (token_rarity == rarity) {
                 let token_data_id = token::create_token_data_id(
                     lootbox.collection_resource_address,
-                    lootbox.collection_name,
+                    lootbox.collectionName,
                     token_name
                 );
                 
-                // Check if max supply is reached
-                let cur_supply = token::get_token_supply(&token_data_id);
                 let max_supply_reached = false;
+                let cur_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
                 
-                if (option::is_some(&cur_supply)) {
-                    let max_supply = token::get_tokendata_maximum(&token_data_id);
+                if (cur_supply != option::none()) {
+                    let max_supply = token::get_tokendata_maximum(token_data_id);
                     if (max_supply != 0) {
                         let cur_supply_value = *option::borrow(&cur_supply);
                         if (cur_supply_value >= max_supply) {
