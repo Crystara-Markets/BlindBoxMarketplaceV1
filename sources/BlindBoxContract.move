@@ -1410,7 +1410,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Get collection signer
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
 
-            assert!(collection_signer.address() == @projectOwnerAdr, error::not_found(EDEBUG_POINT));
+            assert!(signer::address_of(&collection_signer) == @projectOwnerAdr, error::not_found(EDEBUG_POINT));
 
             // Create token data id
             let token_data_id = token::create_token_data_id(
