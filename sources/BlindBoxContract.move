@@ -1264,23 +1264,44 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         timestamp::now_microseconds()
     }
 
-    /*public entry fun deposit_supra_to_vrf<CoinType>(
-    user: &signer,
-    amount: u64
-    ) {
-        assert!(signer::address_of(user) == @projectOwnerAdr, error::permission_denied(ENOT_AUTHORIZED));
+        #[view]
+    public fun simulate_dvrf_result(
+        random_num: u256,
+        creator_addr: address,
+        collection_name: vector<u8>
+    ): (String, String, u256) acquires Lootboxes {
+        // Get lootbox
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
         
-        let buyer_balance = coin::balance<CoinType>(signer::address_of(user));
-        assert!(buyer_balance >= amount, error::invalid_argument(EINSUFFICIENT_BALANCE));
+        // Select rarity based on weights
+        let selected_rarity = select_rarity(lootbox, random_num);
+        
+        // If no valid rarity found, return empty strings
+        if (selected_rarity == string::utf8(b"")) {
+            return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+        };
 
-        // Distribute payment
-        let coins = coin::withdraw<CoinType>(user, amount);
-        let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
-        let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
-
-        coin::deposit(signer::address_of(&module_resource_signer), coins);
-        supra_vrf::deposit_token(&module_resource_signer, amount);
-    }*/
+        // Get tokens of that rarity
+        let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
+        
+        // If no tokens in that rarity, return empty token name
+        let len = vector::length(&tokens_of_rarity);
+        if (len == 0) {
+            return (selected_rarity, string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+        };
+        
+        // Calculate token index using same logic as receive_dvrf
+        let len_u256 = (len as u256);
+        let token_index = random_num % len_u256;
+        let token_index_u64 = (token_index as u64);
+        
+        // Get selected token
+        let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+        
+        // Return tuple of (selected_rarity, selected_token, random_number)
+        (selected_rarity, selected_token, random_num)
+    }
 
     // Callback function for VRF
     public entry fun receive_dvrf(
@@ -1559,6 +1580,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         receivable_list
     }
+
+
 
 
     fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
