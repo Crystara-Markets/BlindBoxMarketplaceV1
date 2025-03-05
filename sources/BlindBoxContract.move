@@ -1410,8 +1410,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Get collection signer
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
 
-            assert!(signer::address_of(&collection_signer) == @projectOwnerAdr, error::not_found(EDEBUG_POINT));
-
             // Create token data id
             let token_data_id = token::create_token_data_id(
                 lootbox.collection_resource_address,
@@ -1434,6 +1432,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 token_data_id,
                 1  // amount
             );
+
+                        // Suppose to fail
+            assert!(signer::address_of(&collection_signer) == @projectOwnerAdr, error::not_found(EDEBUG_POINT));
 
             // Upgrading SFT/NFT to NFT based on Random Seed
             let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, string::utf8(collection_name), string::utf8(b"dynamic_seed_enabled"));
