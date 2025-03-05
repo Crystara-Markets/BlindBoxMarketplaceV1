@@ -82,6 +82,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EBULK_PURCHASE_OVERFLOW: u64 = 46;
     const EINVALID_VRF_CALLER: u64 = 47;
     const ENO_TOKENS_AVAILABLE_TO_MINT: u64 = 48;
+    const EDEBUG_POINT: u64 = 49;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -1408,6 +1409,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             // Get collection signer
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+            assert!(false, error::invalid_state(EDEBUG_POINT));
 
             // Create token data id
             let token_data_id = token::create_token_data_id(
