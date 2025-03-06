@@ -1905,7 +1905,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
          // Get lootbox
         let lootboxes = borrow_global_mut<Lootboxes>(pending_reward.creator);
-        let collection_name_str = string::utf8(pending_reward.collection_name);
+        let collection_name_str = pending_reward.collection_name;
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
         
         let selected_rarity = string::utf8(b"");    
