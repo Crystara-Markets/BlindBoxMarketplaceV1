@@ -84,6 +84,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ENO_TOKENS_AVAILABLE_TO_MINT: u64 = 48;
     const EDEBUG_POINT: u64 = 49;
     const EINVALID_TOKEN_INDEX: u64 = 50;
+    const ERARITY_NOTEXISTS: u64 = 51;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -1614,17 +1615,15 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         rarity: vector<u8>
     ) acquires Lootboxes, LootboxDistributionHandlers {
-        let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let rarity_str = string::utf8(rarity);
         
         // Get lootbox
-        let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootboxes = borrow_global<Lootboxes>(signer::address_of(creator));
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         
         // Verify creator
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+        assert!(lootbox.creator == signer::address_of(creator), error::permission_denied(ENOT_AUTHORIZED));
         
         // Verify rarity exists
         assert!(table::contains(&lootbox.rarities, rarity_str), error::not_found(ERARITY_NOTEXISTS));
@@ -1633,19 +1632,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         init_distribution_handler_for_collection(creator, collection_name_str);
         
         // Get distribution handler
-        let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+        let handlers = borrow_global_mut<LootboxDistributionHandlers>(signer::address_of(creator));
         let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
         
-        // Initialize vector for this rarity if it doesn't exist
-        if (!table::contains(&handler.avail_tokens_in_rarity, rarity_str)) {
-            table::add(&mut handler.avail_tokens_in_rarity, rarity_str, vector::empty<String>());
-        };
-        
-        // Get or create vector for available tokens
-        let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str);
-        
-        // Clear existing tokens (in case of re-upgrade)
-        vector::clear(avail_tokens);
+        // Create new vector for available tokens
+        let avail_tokens = vector::empty<String>();
         
         // Add all available tokens for this rarity
         let i = 0;
@@ -1655,10 +1646,17 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity_str) {
                 let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name);
                 if (max_supply == 0 || cur_supply < max_supply) {
-                    vector::push_back(avail_tokens, token_name);
+                    vector::push_back(&mut avail_tokens, token_name);
                 };
             };
             i = i + 1;
+        };
+
+        // Add or update the rarity's available tokens
+        if (table::contains(&handler.avail_tokens_in_rarity, rarity_str)) {
+            *table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str) = avail_tokens;
+        } else {
+            table::add(&mut handler.avail_tokens_in_rarity, rarity_str, avail_tokens);
         };
     }
 
@@ -1695,7 +1693,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let len = vector::length(&lootbox.rarity_keys);
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            upgrade_lootbox_rarity_distribution(creator, collection_name, string::bytes(*rarity));
+            upgrade_lootbox_rarity_distribution(creator, collection_name, &string::bytes(*rarity));
             i = i + 1;
         };
     }
