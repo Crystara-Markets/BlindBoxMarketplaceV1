@@ -1018,7 +1018,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       creator_addr: address,
       collection_name: vector<u8>,
       quantity: u64
-    ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
+    ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
 
         assert!(signer::address_of(buyer) == @projectOwnerAdr, error::invalid_argument(ENO_PERMISSION));
         
