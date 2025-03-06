@@ -2830,8 +2830,16 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             if (is_upgraded) {
                 let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
                 let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
-                let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str);
-                vector::push_back(avail_tokens, token_name_str);
+
+                if(table::contains(&handler.avail_tokens_in_rarity, rarity_str)) {
+                    let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str);
+                    vector::push_back(avail_tokens, token_name_str);
+                }
+                else {
+                    let avail_tokens = vector::empty<String>();
+                    vector::push_back(&mut avail_tokens, token_name_str);
+                    table::add(&mut handler.avail_tokens_in_rarity, rarity_str, avail_tokens);
+                };
             };
 
             // Emit event for each token
