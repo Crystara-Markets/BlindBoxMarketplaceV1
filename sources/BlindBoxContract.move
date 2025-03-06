@@ -85,6 +85,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EDEBUG_POINT: u64 = 49;
     const EINVALID_TOKEN_INDEX: u64 = 50;
     const ERARITY_NOTEXISTS: u64 = 51;
+    const ECANNOT_DELETE_EXISTING_RARITY: u64 = 52;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -646,10 +647,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let i = 0;
         while (i < len) {
             let rarity_name = string::utf8(*vector::borrow(&rarity_names, i));
-            if (table::contains(&lootbox.rarities, rarity_name)) {
-                table::remove(&mut lootbox.rarities, rarity_name);
-                table::remove(&mut lootbox.rarities_showItemWhenRoll, rarity_name);
-            };
+            assert!(!table::contains(&lootbox.rarities, rarity_name), error::invalid_argument(ECANNOT_DELETE_EXISTING_RARITY));
             i = i + 1;
         };
 
@@ -935,7 +933,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       property_keys: vector<String>,
       property_types: vector<String>,
       property_values: vector<vector<u8>>
-    ) acquires Lootboxes {
+    ) /*acquires Lootboxes*/ {
+        
+        /*
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
         let token_name_str = string::utf8(token_name);
@@ -1007,6 +1007,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 property_types,
             );
         };
+
+        */
+        assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
     }
 
     public entry fun purchase_multiple_lootboxes<CoinType>(
