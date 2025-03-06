@@ -1042,7 +1042,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         buyer: &signer,
         creator_addr: address,
         collection_name: vector<u8>,
-      ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
+      ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
 
         // Check if coin type is SupraCoin
         if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
@@ -1130,8 +1130,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // Check if distribution is upgraded, if yes, use for loop to check if at least one token is available
         if(is_distribution_upgraded(lootbox)) {
-            let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
-            let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
+            let handlers = borrow_global<LootboxDistributionHandlers>(creator_addr);
+            let handler = table::borrow(&handlers.distribution_handlers, collection_name_str);
             at_least_one_available = has_at_least_one_available_token(lootbox, &handler);
         }
         else {
@@ -1306,7 +1306,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         if(is_distribution_upgraded(lootbox)) {
             let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
             let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name);
-            (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
+            let (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
+            return (selected_rarity, selected_token, random_num)
         }
         else {
             // Select rarity based on weights
@@ -1335,7 +1336,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
             
             // Return tuple of (selected_rarity, selected_token, random_number)
-            (selected_rarity, selected_token, random_num)
+            return (selected_rarity, selected_token, random_num)
         };
 
         (selected_rarity, selected_token, random_num)
