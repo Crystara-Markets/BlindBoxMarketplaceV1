@@ -319,6 +319,16 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         extensions: table::Table<String, LootboxExtension>, // key is collection_name
     }
 
+    struct LootboxDistributionHandler {
+        creator: address,
+        collection_name: String,
+        avail_tokens_in_rarity: table::Table<String, vector<String>>, // rarity -> available token names
+    }
+
+    struct LootboxDistributionHandlers has key {
+        distribution_handlers: table::Table<String, LootboxDistributionHandler>, // collection_name -> handler
+    }
+
     /// Table to store all lootboxes by creator and collection name
     struct Lootboxes has key {
         lootbox_table: table::Table<String, Lootbox>, // Key: collection_name
@@ -1347,31 +1357,56 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let collection_name_str = string::utf8(collection_name);
             let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
             
-            // Select rarity based on weights
-            let selected_rarity = select_rarityV2(lootbox, random_num);
-            
-            //Unused params reduce warnings in a no-op way
-            let _ = selected_rarity;
+            let selected_rarity = string::utf8(b"");    
+            let selected_token = string::utf8(b"");
+            let token_index = 0;
 
-            if (selected_rarity == string::utf8(b"")) {
+            //New distribution logic
+            if(is_distribution_upgraded(creator_addr, collection_name_str)) {
+                (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, &mut handler);
+            }
+            //Old distribution logic
+            else {
+                selected_rarity = select_rarity(lootbox, random_num);
+
+                // Get tokens of that rarity
+                let token_count = get_rarity_token_count(lootbox, selected_rarity);
+                if (token_count == 0) {
+                    emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
+                    return
+                };
+
+                // Get tokens of that rarity
+                let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
+
+                // Unused params reduce warnings in a no-op way
+                let _ = tokens_of_rarity;
+            
+                // Verify we have tokens to select from
+                let len = vector::length(&tokens_of_rarity);
+                if (len == 0) {
+                    emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
+                    return
+                };
+                
+                // Safe conversion: len is guaranteed to fit in u256
+                let len_u256 = (len as u256);
+                
+                // Calculate token index using full u256 randomness
+                let token_index = random_num % len_u256;
+                
+                // Safe conversion back to u64: guaranteed to be less than len
+                let token_index_u64 = (token_index as u64);
+                assert!(token_index_u64 < len, error::invalid_state(EUNSAFE_NUMBER_CONVERSION));
+                
+                let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+            };
+
+            if (selected_rarity == string::utf8(b"") || selected_token == string::utf8(b"")) {
                 // Emit event that no token was found
                 emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
                 return
             };
-
-            // Get tokens of that rarity
-            let token_count = get_rarity_token_count(lootbox, selected_rarity);
-            if (token_count == 0) {
-                emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
-                return
-            };
-            
-             // Calculate token index using full u256 randomness
-            let token_index = random_num % (token_count as u256);
-            let token_index_u64 = (token_index as u64);
-            
-            // Get only the selected token instead of the full array
-            let selected_token = get_token_at_index(lootbox, selected_rarity, token_index_u64);
 
             // Get collection signer
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
@@ -1398,6 +1433,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 token_data_id,
                 1  // amount
             );
+
+            if(is_distribution_upgraded(creator_addr, collection_name_str)) {
+                update_distribution_handler_post_mint(handler, selected_rarity, token_index, lootbox);
+            };
 
             // Upgrading SFT/NFT to NFT based on Random Seed
             let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, string::utf8(collection_name), string::utf8(b"dynamic_seed_enabled"));
@@ -1470,11 +1509,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                     timestamp: timestamp::now_microseconds()
                 }
             );
-
         }
 
-
-       // Helper function to get token count for a rarity without loading all tokens
+    // Helper function to get token count for a rarity without loading all tokens
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
         let count = 0u64;
         let i = 0;
@@ -1483,20 +1520,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         while (i < len) {
             let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                let token_data_id = token::create_token_data_id(
-                    lootbox.collection_resource_address,
-                    lootbox.collectionName,
-                    token_name
-                );
-                
-                // Simplified supply check
-                let cur_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
-                if (option::is_none(&cur_supply) || {
-                    let max_supply = token::get_tokendata_maximum(token_data_id);
-                    max_supply == 0 || *option::borrow(&cur_supply) < max_supply
-                }) {
-                    count = count + 1;
-                };
+                count = count + 1;
             };
             i = i + 1;
         };
@@ -1512,25 +1536,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         while (i < len) {
             let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity) {
-                let token_data_id = token::create_token_data_id(
-                    lootbox.collection_resource_address,
-                    lootbox.collectionName,
-                    token_name
-                );
-                
-                // Simplified supply check
-                let cur_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
-                let is_available = option::is_none(&cur_supply) || {
-                    let max_supply = token::get_tokendata_maximum(token_data_id);
-                    max_supply == 0 || *option::borrow(&cur_supply) < max_supply
+                if (current_index == target_index) {
+                    return token_name
                 };
-                
-                if (is_available) {
-                    if (current_index == target_index) {
-                        return token_name
-                    };
-                    current_index = current_index + 1;
-                };
+                current_index = current_index + 1;
             };
             i = i + 1;
         };
@@ -1558,6 +1567,130 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 timestamp: timestamp::now_microseconds()
             }
         );
+    }
+
+        // Initialize the distribution handlers resource
+    fun init_distribution_handlers(source_account: &signer) {
+        if (!exists<LootboxDistributionHandlers>(signer::address_of(source_account))) {
+            move_to(source_account, LootboxDistributionHandlers {
+                distribution_handlers: table::new<String, LootboxDistributionHandler>(),
+            });
+        };
+    }
+
+    fun get_token_supply_and_maximum(lootbox: &Lootbox, token_name: String): (u64, u64) {
+        let token_data_id = token::create_token_data_id(
+            lootbox.collection_resource_address,
+            lootbox.collectionName,
+            token_name
+        );
+        
+        let current_supply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
+        let maximum_supply = token::get_tokendata_maximum(token_data_id);
+        
+        let current = if (option::is_none(&current_supply)) {
+            0
+        } else {
+            *option::borrow(&current_supply)
+        };
+        
+        (current, maximum_supply)
+    }
+
+        // Check if distribution is upgraded for a lootbox
+    public fun is_distribution_upgraded(
+        creator: address,
+        collection_name: String
+    ): bool acquires LootboxDistributionHandlers, Lootboxes {
+        if (!exists<LootboxDistributionHandlers>(creator)) {
+            return false
+        };
+
+        let handlers = borrow_global<LootboxDistributionHandlers>(creator);
+        if (!table::contains(&handlers.distribution_handlers, collection_name)) {
+            return false
+        };
+
+        let handler = table::borrow(&handlers.distribution_handlers, collection_name);
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        // Check if all rarities are present in the handler
+        // Instead of this, check if extension bool is true for upgraded
+        let i = 0;
+        let len = vector::length(&lootbox.rarity_keys);
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            if (!table::contains(&handler.avail_tokens_in_rarity, *rarity)) {
+                return false
+            };
+            i = i + 1;
+        };
+        true
+    }
+
+    // Select rarity, token, and index in one function
+    fun select_rarity_and_token_distribution_upgraded(
+        lootbox: &Lootbox,
+        random_num: u256,
+        handler: &mut LootboxDistributionHandler
+    ): (String, String, u64) {
+        let total_weight = (0 as u256);
+        let rarities = &lootbox.rarities;
+        let len = vector::length(&lootbox.rarity_keys);
+        
+        // First pass: calculate total weight of rarities that have available tokens
+        let i = 0;
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
+            if (vector::length(avail_tokens) > 0) {
+                let weight = *table::borrow(rarities, *rarity);
+                total_weight = total_weight + (weight as u256);
+            };
+            i = i + 1;
+        };
+
+        // Second pass: select rarity based on available tokens
+        let roll = random_num % total_weight;
+        let current_weight = (0 as u256);
+        i = 0;
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
+            let avail_len = vector::length(avail_tokens);
+            
+            if (avail_len > 0) {
+                let weight = *table::borrow(rarities, *rarity);
+                current_weight = current_weight + (weight as u256);
+                if (roll < current_weight) {
+                    // Select token index using the remaining bits of random_num
+                    let token_index = ((random_num >> 64) % (avail_len as u256) as u64);
+                    let selected_token = *vector::borrow(avail_tokens, token_index);
+                    return (*rarity, selected_token, token_index)
+                };
+            };
+            i = i + 1;
+        };
+        
+        abort error::invalid_state(ENO_TOKENS_AVAILABLE)
+    }
+
+    // Update distribution handler after minting - now using the exact index
+    fun update_distribution_handler_post_mint(
+        handler: &mut LootboxDistributionHandler,
+        rarity: String,
+        token_index: u64,
+        lootbox: &Lootbox
+    ) {
+        let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity);
+        let token_name = *vector::borrow(avail_tokens, token_index);
+        let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name);
+        
+        if (max_supply != 0 && cur_supply >= max_supply) {
+            // Remove token at exact index - O(1) operation
+            vector::remove(avail_tokens, token_index);
+        };
     }
         
     
