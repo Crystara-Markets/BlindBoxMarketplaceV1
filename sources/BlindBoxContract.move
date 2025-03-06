@@ -1402,7 +1402,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 let token_index_u64 = (token_index as u64);
                 assert!(token_index_u64 < len, error::invalid_state(EUNSAFE_NUMBER_CONVERSION));
                 
-                let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+                selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
             };
 
             if (selected_rarity == string::utf8(b"") || selected_token == string::utf8(b"")) {
