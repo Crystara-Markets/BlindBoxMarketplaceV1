@@ -1785,9 +1785,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let token_name = *vector::borrow(avail_tokens, token_index);
         let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name);
         
-
-
-        if (cur_supply > 1 || ( max_supply != 0 && cur_supply >= max_supply) ) {
+        if ( max_supply != 0 && cur_supply >= max_supply ) {
             // Remove token at exact index - O(1) operation
             vector::remove(avail_tokens, token_index);
         };
