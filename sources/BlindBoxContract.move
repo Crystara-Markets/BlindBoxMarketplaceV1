@@ -86,6 +86,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EINVALID_TOKEN_INDEX: u64 = 50;
     const ERARITY_NOTEXISTS: u64 = 51;
     const ECANNOT_DELETE_EXISTING_RARITY: u64 = 52;
+    const ENO_PERMISSION: u64 = 53;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -1018,8 +1019,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       collection_name: vector<u8>,
       quantity: u64
     ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions {
+
+        assert!(signer::address_of(buyer) == @projectOwnerAdr, error::invalid_argument(ENO_PERMISSION));
         
-        let overflow = 5;
+        let overflow = 200;
         let iter = 0;
 
         let price_per_box = get_lootbox_price<CoinType>(creator_addr, string::utf8(collection_name));
@@ -1125,44 +1128,52 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let at_least_one_available = false;
         let i = 0;
         
-        // Iterate through all tokens in the lootbox
-        while (i < token_count) {
-            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
-            let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
+        // Check if distribution is upgraded, if yes, use for loop to check if at least one token is available
+        if(is_distribution_upgraded(lootbox)) {
+            let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+            let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
+            at_least_one_available = has_at_least_one_available_token(lootbox, &handler);
+        }
+        else {
+            // Distribution not upgraded, use while loop to check if at least one token is available
+            while (i < token_count) {
+                let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+                let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
             
-            // Get token supply from the collection
-            let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-            let token_data_id = token::create_token_data_id(
-                lootbox.collection_resource_address,
-                collection_name_str,
-                token_name
-            );
-            
-            // Check if this token has supply available
-            let curSupply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
+                // Get token supply from the collection
+                let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+                let token_data_id = token::create_token_data_id(
+                    lootbox.collection_resource_address,
+                    collection_name_str,
+                    token_name
+                );
+                
+                // Check if this token has supply available
+                let curSupply = token::get_token_supply(lootbox.collection_resource_address, token_data_id);
 
-            // If the token has a current supply, check against max supply.
-            if (curSupply != option::none()) {
-                let maxSupply = token::get_tokendata_maximum(token_data_id);
-                if (maxSupply != 0) {
-                    let curSupplyValue = *option::borrow(&curSupply);
-                    if(curSupplyValue < maxSupply) {
+                // If the token has a current supply, check against max supply.
+                if (curSupply != option::none()) {
+                    let maxSupply = token::get_tokendata_maximum(token_data_id);
+                    if (maxSupply != 0) {
+                        let curSupplyValue = *option::borrow(&curSupply);
+                        if(curSupplyValue < maxSupply) {
+                            at_least_one_available = true;
+                            break
+                        };
+                    // Max supply == 0 means infinite supply.
+                    }else {
                         at_least_one_available = true;
                         break
                     };
-                // Max supply == 0 means infinite supply.
+                // If the token has no current supply, it is available to mint / has no max supply.
                 }else {
                     at_least_one_available = true;
                     break
                 };
-            // If the token has no current supply, it is available to mint / has no max supply.
-            }else {
-                at_least_one_available = true;
-                break
-            };
-            
-            i = i + 1;
-        };
+                
+                i = i + 1;
+                };
+        }
         
         // Assert that at least one token is available for minting
         assert!(at_least_one_available, error::invalid_state(ENO_TOKENS_AVAILABLE_TO_MINT));
@@ -1288,33 +1299,45 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     ): (String, String, u256) acquires Lootboxes {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        let selected_rarity = string::utf8(b"");
+        let selected_token = string::utf8(b"");
+        let token_index = 0;
         
-        // Select rarity based on weights
-        let selected_rarity = select_rarity(lootbox, random_num);
-        
-        // If no valid rarity found, return empty strings
-        if (selected_rarity == string::utf8(b"")) {
-            return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+        if(is_distribution_upgraded(lootbox)) {
+            let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+            let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name);
+            (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
+        }
+        else {
+            // Select rarity based on weights
+            let selected_rarity = select_rarity(lootbox, random_num);
+                
+            // If no valid rarity found, return empty strings
+            if (selected_rarity == string::utf8(b"")) {
+                return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+            };
+
+            // Get tokens of that rarity
+            let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
+            
+            // If no tokens in that rarity, return empty token name
+            let len = vector::length(&tokens_of_rarity);
+            if (len == 0) {
+                return (selected_rarity, string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
+            };
+            
+            // Calculate token index using same logic as receive_dvrf
+            let len_u256 = (len as u256);
+            let token_index = random_num % len_u256;
+            let token_index_u64 = (token_index as u64);
+            
+            // Get selected token
+            let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+            
+            // Return tuple of (selected_rarity, selected_token, random_number)
+            (selected_rarity, selected_token, random_num)
         };
 
-        // Get tokens of that rarity
-        let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
-        
-        // If no tokens in that rarity, return empty token name
-        let len = vector::length(&tokens_of_rarity);
-        if (len == 0) {
-            return (selected_rarity, string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
-        };
-        
-        // Calculate token index using same logic as receive_dvrf
-        let len_u256 = (len as u256);
-        let token_index = random_num % len_u256;
-        let token_index_u64 = (token_index as u64);
-        
-        // Get selected token
-        let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
-        
-        // Return tuple of (selected_rarity, selected_token, random_number)
         (selected_rarity, selected_token, random_num)
     }
 
@@ -1843,6 +1866,28 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // If no tokens found in any rarity
         (string::utf8(b""), string::utf8(b""), 0)
+    }
+    
+    fun has_at_least_one_available_token(
+        lootbox: &Lootbox,
+        handler: &LootboxDistributionHandler
+    ): bool {
+        let len = vector::length(&lootbox.rarity_keys);
+        if (len == 0) {
+            return false
+        };
+        
+        let i = 0;
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
+            if (vector::length(avail_tokens) > 0) {
+                return true
+            };
+            i = i + 1;
+        };
+        
+        false
     }
 
     // Update distribution handler after minting - now using the exact index
