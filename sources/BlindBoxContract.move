@@ -1680,24 +1680,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         table::contains(&handler.avail_tokens_in_rarity, rarity)
     }
 
-    // Optional: Upgrade all rarities at once
-    public entry fun upgrade_all_lootbox_rarities(
-        creator: &signer,
-        collection_name: vector<u8>
-    ) acquires Lootboxes, LootboxDistributionHandlers {
-        let collection_name_str = string::utf8(collection_name);
-        let lootboxes = borrow_global<Lootboxes>(signer::address_of(creator));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
-        
-        let i = 0;
-        let len = vector::length(&lootbox.rarity_keys);
-        while (i < len) {
-            let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            upgrade_lootbox_rarity_distribution(creator, collection_name, *string::bytes(*rarity));
-            i = i + 1;
-        };
-    }
-
     fun get_token_supply_and_maximum(lootbox: &Lootbox, token_name: String): (u64, u64) {
         let token_data_id = token::create_token_data_id(
             lootbox.collection_resource_address,
