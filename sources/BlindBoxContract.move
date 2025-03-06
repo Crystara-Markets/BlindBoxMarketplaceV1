@@ -2762,6 +2762,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Check distribution upgrade status once
         let is_upgraded = is_distribution_upgraded(lootbox);
 
+        if(is_upgraded) {
+            init_distribution_handler_for_collection(
+                creator,
+                collection_name_str
+            );
+        };
+
         let collection_resource_address = lootbox.collection_resource_address;
         let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
 
