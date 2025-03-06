@@ -1662,7 +1662,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     // Helper function to check if a specific rarity is upgraded
     #[view]
-    public entry fun is_rarity_distribution_upgraded(
+    public fun is_rarity_distribution_upgraded(
         creator: address,
         collection_name: String,
         rarity: String
