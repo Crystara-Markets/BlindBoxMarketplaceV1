@@ -1132,7 +1132,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         if(is_distribution_upgraded(lootbox)) {
             let handlers = borrow_global<LootboxDistributionHandlers>(creator_addr);
             let handler = table::borrow(&handlers.distribution_handlers, collection_name_str);
-            at_least_one_available = has_at_least_one_available_token(lootbox, &handler);
+            at_least_one_available = has_at_least_one_available_token(lootbox, handler);
         }
         else {
             // Distribution not upgraded, use while loop to check if at least one token is available
