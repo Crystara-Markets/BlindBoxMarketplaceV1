@@ -1365,7 +1365,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             if(is_distribution_upgraded(creator_addr, collection_name_str)) {
                 let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
                 let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
-                (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, &mut handler);
+                (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
             }
             //Old distribution logic
             else {
@@ -1437,6 +1437,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             );
 
             if(is_distribution_upgraded(creator_addr, collection_name_str)) {
+                let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+                let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
                 update_distribution_handler_post_mint(handler, selected_rarity, token_index, lootbox);
             };
 
