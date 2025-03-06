@@ -1654,7 +1654,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Add or update the rarity's available tokens
         if (table::contains(&handler.avail_tokens_in_rarity, rarity_str)) {
-            table::remove(&handler.avail_tokens_in_rarity, rarity_str);
+            table::remove(&mut handler.avail_tokens_in_rarity, rarity_str);
         };
 
         table::add(&mut handler.avail_tokens_in_rarity, rarity_str, avail_tokens);
