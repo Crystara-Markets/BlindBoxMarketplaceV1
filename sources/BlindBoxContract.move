@@ -1362,7 +1362,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let token_index = 0;
 
             //New distribution logic
-            if(is_distribution_upgraded(creator_addr, collection_name_str)) {
+            if(is_distribution_upgraded(lootbox)) {
                 let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
                 let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
                 (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
@@ -1436,7 +1436,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 1  // amount
             );
 
-            if(is_distribution_upgraded(creator_addr, collection_name_str)) {
+            if(is_distribution_upgraded(lootbox)) {
                 let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
                 let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
                 update_distribution_handler_post_mint(handler, selected_rarity, token_index, lootbox);
@@ -1603,24 +1603,20 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Check if distribution is upgraded for a lootbox
     public fun is_distribution_upgraded(
-        creator: address,
-        collection_name: String
-    ): bool acquires LootboxDistributionHandlers, Lootboxes {
-        if (!exists<LootboxDistributionHandlers>(creator)) {
+        lootbox: &Lootbox
+    ): bool acquires LootboxDistributionHandlers {
+        if (!exists<LootboxDistributionHandlers>(lootbox.creator)) {
             return false
         };
 
-        let handlers = borrow_global<LootboxDistributionHandlers>(creator);
-        if (!table::contains(&handlers.distribution_handlers, collection_name)) {
+        let handlers = borrow_global<LootboxDistributionHandlers>(lootbox.creator);
+        if (!table::contains(&handlers.distribution_handlers, lootbox.collectionName)) {
             return false
         };
 
-        let handler = table::borrow(&handlers.distribution_handlers, collection_name);
-        let lootboxes = borrow_global<Lootboxes>(creator);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        let handler = table::borrow(&handlers.distribution_handlers, lootbox.collectionName);
         
         // Check if all rarities are present in the handler
-        // Instead of this, check if extension bool is true for upgraded
         let i = 0;
         let len = vector::length(&lootbox.rarity_keys);
         while (i < len) {
