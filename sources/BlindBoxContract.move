@@ -319,7 +319,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         extensions: table::Table<String, LootboxExtension>, // key is collection_name
     }
 
-    struct LootboxDistributionHandler {
+    struct LootboxDistributionHandler has store {
         creator: address,
         collection_name: String,
         avail_tokens_in_rarity: table::Table<String, vector<String>>, // rarity -> available token names
@@ -1335,7 +1335,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         random_num: u256,
         buyer: address
-    ) acquires  Lootboxes, UserClaimResourceInfoV2, LootboxExtensions {
+    ) acquires  Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
 
             assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
 
@@ -1363,6 +1363,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             //New distribution logic
             if(is_distribution_upgraded(creator_addr, collection_name_str)) {
+                let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+                let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
                 (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, &mut handler);
             }
             //Old distribution logic
