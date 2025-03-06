@@ -1732,7 +1732,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     // Check if distribution is upgraded for a lootbox
     public fun is_distribution_upgraded(
         lootbox: &Lootbox
-    ): bool acquires LootboxDistributionHandlers {
+    ): bool acquires LootboxDistributionHandlers, LootboxExtensions {
         if (!exists<LootboxDistributionHandlers>(lootbox.creator)) {
             return false
         };
