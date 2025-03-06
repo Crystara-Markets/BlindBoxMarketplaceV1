@@ -1903,71 +1903,63 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(table::contains(&pending_rewards.rewards, nonce), error::not_found(ENO_NONCE_NOT_FOUND));
         let pending_reward = table::remove(&mut pending_rewards.rewards, nonce);
 
-        // Get lootbox
+         // Get lootbox
         let lootboxes = borrow_global_mut<Lootboxes>(pending_reward.creator);
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, pending_reward.collection_name);
+        let collection_name_str = string::utf8(pending_reward.collection_name);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
         
-        // Select rarity based on weights
-        let selected_rarity = select_rarity(lootbox, random_num);
+        let selected_rarity = string::utf8(b"");    
+        let selected_token = string::utf8(b"");
+        let token_index = 0;
+
+        //New distribution logic
+        if(is_distribution_upgraded(lootbox)) {
+            let handlers = borrow_global_mut<LootboxDistributionHandlers>(pending_reward.creator);
+            let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
+            (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
+        }
+        //Old distribution logic
+        else {
+            selected_rarity = select_rarity(lootbox, random_num);
+
+            // Get tokens of that rarity
+            let token_count = get_rarity_token_count(lootbox, selected_rarity);
+            if (token_count == 0) {
+                emit_no_token_event(nonce, pending_reward.buyer, pending_reward.creator, collection_name_str, selected_rarity, random_num);
+                return
+            };
+
+            // Get tokens of that rarity
+            let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
+
+            // Unused params reduce warnings in a no-op way
+            let _ = tokens_of_rarity;
         
-        //Unused params reduce warnings in a no-op way
-        let _ = selected_rarity;
-
-        if (selected_rarity == string::utf8(b"")) {
-            // Emit event that no token was found
-            event::emit(
-                LootboxRewardDistributedEvent {
-                    nonce,
-                    buyer: pending_reward.buyer,
-                    creator: pending_reward.creator,
-                    collection_name: pending_reward.collection_name,
-                    selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
-                    selected_rarity: selected_rarity,
-                    random_number: random_num,
-                    timestamp: timestamp::now_microseconds()
-                }
-            );
-            return
-        };
-
-        // Get tokens of that rarity
-        let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
-
-        // Unused params reduce warnings in a no-op way
-        let _ = tokens_of_rarity;
-    
-        // Verify we have tokens to select from
-        let len = vector::length(&tokens_of_rarity);
-        if (len == 0) {
-            // Emit event that no token was found
-            event::emit(
-                LootboxRewardDistributedEvent {
-                    nonce,
-                    buyer: pending_reward.buyer,
-                    creator: pending_reward.creator,
-                    collection_name: pending_reward.collection_name,
-                    selected_token: string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"),
-                    selected_rarity: selected_rarity,
-                    random_number: random_num,
-                    timestamp: timestamp::now_microseconds()
-                }
-            );
+            // Verify we have tokens to select from
+            let len = vector::length(&tokens_of_rarity);
+            if (len == 0) {
+                emit_no_token_event(nonce, pending_reward.buyer, pending_reward.creator, collection_name_str, selected_rarity, random_num);
+                return
+            };
             
-            // Return early - pending reward is already removed from the table
+            // Safe conversion: len is guaranteed to fit in u256
+            let len_u256 = (len as u256);
+            
+            // Calculate token index using full u256 randomness
+            let token_index = random_num % len_u256;
+            
+            // Safe conversion back to u64: guaranteed to be less than len
+            let token_index_u64 = (token_index as u64);
+            assert!(token_index_u64 < len, error::invalid_state(EUNSAFE_NUMBER_CONVERSION));
+            
+            selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
+        };
+
+        if (selected_rarity == string::utf8(b"") || selected_token == string::utf8(b"")) {
+            // Emit event that no token was found
+            emit_no_token_event(nonce, pending_reward.buyer, pending_reward.creator, collection_name_str, selected_rarity, random_num);
             return
         };
-        
-        // Safe conversion: len is guaranteed to fit in u256
-        let len_u256 = (len as u256);
-        
-        // Calculate token index using full u256 randomness
-        let token_index = random_num % len_u256;
-        
-        // Safe conversion back to u64: guaranteed to be less than len
-        let token_index_u64 = (token_index as u64);
-        assert!(token_index_u64 < len, error::invalid_state(EUNSAFE_NUMBER_CONVERSION));
-        
-        let selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
 
         // Get collection signer
         let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
@@ -1994,6 +1986,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             token_data_id,
             1  // amount
         );
+
+        if(is_distribution_upgraded(lootbox)) {
+            let handlers = borrow_global_mut<LootboxDistributionHandlers>(pending_reward.creator);
+            let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
+            update_distribution_handler_post_mint(handler, selected_rarity, token_index, lootbox);
+        };
 
         // Upgrading SFT/NFT to NFT based on Random Seed
         let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, pending_reward.collection_name, string::utf8(b"dynamic_seed_enabled"));
