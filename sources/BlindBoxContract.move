@@ -2740,7 +2740,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         token_uris: vector<vector<u8>>,
         rarities: vector<vector<u8>>,
         max_supplies: vector<u64>
-    ) acquires Lootboxes, LootboxDistributionHandlers {
+    ) acquires Lootboxes, LootboxDistributionHandlers, LootboxExtensions {
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
 
