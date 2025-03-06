@@ -1299,7 +1299,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator_addr: address,
         collection_name: String,
         random_num: u256,
-    ): (String, String, u256) acquires Lootboxes, LootboxDistributionHandlers {
+    ): (String, String, u256) acquires Lootboxes, LootboxDistributionHandlers, LootboxExtensions {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
         let selected_rarity = string::utf8(b"");
