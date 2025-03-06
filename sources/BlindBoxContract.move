@@ -1654,10 +1654,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Add or update the rarity's available tokens
         if (table::contains(&handler.avail_tokens_in_rarity, rarity_str)) {
-            *table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str) = avail_tokens;
-        } else {
-            table::add(&mut handler.avail_tokens_in_rarity, rarity_str, avail_tokens);
+            table::remove(&mut handler.avail_tokens_in_rarity, rarity_str);
         };
+
+        table::add(&mut handler.avail_tokens_in_rarity, rarity_str, avail_tokens);
     }
 
     // Helper function to check if a specific rarity is upgraded
