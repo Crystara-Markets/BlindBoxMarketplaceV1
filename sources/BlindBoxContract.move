@@ -1582,6 +1582,124 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
     }
 
+        // Initialize distribution handler for a collection if it doesn't exist
+    fun init_distribution_handler_for_collection(
+        creator: &signer,
+        collection_name: String
+    ) acquires LootboxDistributionHandlers {
+        let creator_addr = signer::address_of(creator);
+        
+        // Initialize handlers resource if it doesn't exist
+        if (!exists<LootboxDistributionHandlers>(creator_addr)) {
+            move_to(creator, LootboxDistributionHandlers {
+                distribution_handlers: table::new<String, LootboxDistributionHandler>(),
+            });
+        };
+        
+        let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+        
+        // Initialize handler for collection if it doesn't exist
+        if (!table::contains(&handlers.distribution_handlers, collection_name)) {
+            table::add(&mut handlers.distribution_handlers, collection_name, LootboxDistributionHandler {
+                creator: creator_addr,
+                collection_name,
+                avail_tokens_in_rarity: table::new<String, vector<String>>(),
+            });
+        };
+    }
+
+    // Upgrade a specific rarity for a lootbox to use the new distribution system
+    public entry fun upgrade_lootbox_rarity_distribution(
+        creator: &signer,
+        collection_name: vector<u8>,
+        rarity: vector<u8>
+    ) acquires Lootboxes, LootboxDistributionHandlers {
+        let creator_addr = signer::address_of(creator);
+        let collection_name_str = string::utf8(collection_name);
+        let rarity_str = string::utf8(rarity);
+        
+        // Get lootbox
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
+        
+        // Verify creator
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+        
+        // Verify rarity exists
+        assert!(table::contains(&lootbox.rarities, rarity_str), error::not_found(ERARITY_NOTEXISTS));
+        
+        // Initialize distribution handler if needed
+        init_distribution_handler_for_collection(creator, collection_name_str);
+        
+        // Get distribution handler
+        let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+        let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
+        
+        // Initialize vector for this rarity if it doesn't exist
+        if (!table::contains(&handler.avail_tokens_in_rarity, rarity_str)) {
+            table::add(&mut handler.avail_tokens_in_rarity, rarity_str, vector::empty<String>());
+        };
+        
+        // Get or create vector for available tokens
+        let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str);
+        
+        // Clear existing tokens (in case of re-upgrade)
+        vector::clear(avail_tokens);
+        
+        // Add all available tokens for this rarity
+        let i = 0;
+        let len = vector::length(&lootbox.tokensInLootbox);
+        while (i < len) {
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+            if (*table::borrow(&lootbox.token_rarity_mapping, token_name) == rarity_str) {
+                let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name);
+                if (max_supply == 0 || cur_supply < max_supply) {
+                    vector::push_back(avail_tokens, token_name);
+                };
+            };
+            i = i + 1;
+        };
+    }
+
+    // Helper function to check if a specific rarity is upgraded
+    #[view]
+    public entry fun is_rarity_distribution_upgraded(
+        creator: address,
+        collection_name: String,
+        rarity: String
+    ): bool acquires LootboxDistributionHandlers {
+        if (!exists<LootboxDistributionHandlers>(creator)) {
+            return false
+        };
+
+        let handlers = borrow_global<LootboxDistributionHandlers>(creator);
+        if (!table::contains(&handlers.distribution_handlers, collection_name)) {
+            return false
+        };
+
+        let handler = table::borrow(&handlers.distribution_handlers, collection_name);
+        table::contains(&handler.avail_tokens_in_rarity, rarity)
+    }
+
+    // Optional: Upgrade all rarities at once
+    public entry fun upgrade_all_lootbox_rarities(
+        creator: &signer,
+        collection_name: vector<u8>
+    ) acquires Lootboxes, LootboxDistributionHandlers {
+        let collection_name_str = string::utf8(collection_name);
+        let lootboxes = borrow_global<Lootboxes>(signer::address_of(creator));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
+        
+        let i = 0;
+        let len = vector::length(&lootbox.rarity_keys);
+        while (i < len) {
+            let rarity = vector::borrow(&lootbox.rarity_keys, i);
+            upgrade_lootbox_rarity_distribution(creator, collection_name, string::bytes(*rarity));
+            i = i + 1;
+        };
+    }
+
     fun get_token_supply_and_maximum(lootbox: &Lootbox, token_name: String): (u64, u64) {
         let token_data_id = token::create_token_data_id(
             lootbox.collection_resource_address,
@@ -1601,7 +1719,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         (current, maximum_supply)
     }
 
-        // Check if distribution is upgraded for a lootbox
+    // Check if distribution is upgraded for a lootbox
     public fun is_distribution_upgraded(
         lootbox: &Lootbox
     ): bool acquires LootboxDistributionHandlers {
