@@ -2842,7 +2842,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 };
             };
 
-            // Emit event for each token
+            // Emit event for each token 
             event::emit(
                 TokenAddedEvent {
                     creator: creator_addr,
