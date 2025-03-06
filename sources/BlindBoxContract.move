@@ -1173,7 +1173,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 
                 i = i + 1;
                 };
-        }
+        };
         
         // Assert that at least one token is available for minting
         assert!(at_least_one_available, error::invalid_state(ENO_TOKENS_AVAILABLE_TO_MINT));
@@ -2186,66 +2186,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
 
+    //UNUSED / DEPRECATED
     fun select_rarityV2(lootbox: &Lootbox, random_num: u256): String {
-        let len = vector::length(&lootbox.rarity_keys);
-        assert!(len > 0, error::invalid_state(EINVALID_VECTOR_LENGTH));
-        
-        // First pass: Calculate total weight and find initial rarity
-        let total_weight = (0 as u256);
-        let i = 0;
-        let selected_rarity = string::utf8(b"");
-        let selected_weight = 0u64;
-        let rarities = &lootbox.rarities;
-        
-        // Combined loop for total weight calculation and initial rarity selection
-        while (i < len) {
-            let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let weight = *table::borrow(rarities, *rarity);
-            total_weight = total_weight + (weight as u256);
-            
-            // Check if this is our selected rarity (moved from second loop)
-            if (selected_rarity == string::utf8(b"")) {
-                let roll = random_num % total_weight;
-                if (roll < (weight as u256)) {
-                    selected_rarity = *rarity;
-                    selected_weight = weight;
-                };
-            };
-            
-            i = i + 1;
-        };
-        
-        // If no rarity selected (roll was too high), use the last rarity
-        if (string::length(&selected_rarity) == 0) {
-            selected_rarity = *vector::borrow(&lootbox.rarity_keys, len - 1);
-            selected_weight = *table::borrow(rarities, selected_rarity);
-        };
-        
-        // Check if selected rarity has available tokens using count instead of full vector
-        if (get_rarity_token_count(lootbox, selected_rarity) > 0) {
-            return selected_rarity
-        };
-        
-        // If no tokens in selected rarity, look for tokens in more common rarities
-        // We'll do this in a single pass, checking weights as we go
-        i = 0;
-        while (i < len) {
-            let rarity = *vector::borrow(&lootbox.rarity_keys, i);
-            let weight = *table::borrow(rarities, rarity);
-            
-            if (weight > selected_weight) {
-                // Only check token count if weight is higher (more common)
-                if (get_rarity_token_count(lootbox, rarity) > 0) {
-                    return rarity
-                };
-            };
-            i = i + 1;
-        };
-        
-        // If no tokens found in any rarity
         string::utf8(b"")
     }
-
 
     fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
         let total_weight = (0 as u256);
