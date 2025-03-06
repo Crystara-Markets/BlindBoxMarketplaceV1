@@ -1693,7 +1693,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let len = vector::length(&lootbox.rarity_keys);
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            upgrade_lootbox_rarity_distribution(creator, collection_name, &string::bytes(*rarity));
+            upgrade_lootbox_rarity_distribution(creator, collection_name, *string::bytes(*rarity));
             i = i + 1;
         };
     }
