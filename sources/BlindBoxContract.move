@@ -1735,43 +1735,111 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     ): (String, String, u64) {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
-        let len = vector::length(&lootbox.rarity_keys);
         
-        // First pass: calculate total weight of rarities that have available tokens
+        let len = vector::length(&lootbox.rarity_keys);
+        if (len == 0) {
+            return (string::utf8(b""), string::utf8(b""), 0)
+        };
+        
+        // Calculate total weight and store sorted rarities by weight (descending)
         let i = 0;
+        let sorted_rarities = vector::empty<String>();
+        let sorted_weights = vector::empty<u64>();
+        
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
-            if (vector::length(avail_tokens) > 0) {
-                let weight = *table::borrow(rarities, *rarity);
-                total_weight = total_weight + (weight as u256);
+            let weight = *table::borrow(rarities, *rarity);
+            total_weight = total_weight + (weight as u256);
+            
+            // Insert into sorted vectors
+            let j = 0;
+            let inserted = false;
+            while (j < vector::length(&sorted_weights)) {
+                if (weight >= *vector::borrow(&sorted_weights, j)) {
+                    vector::insert(&mut sorted_weights, j, weight);
+                    vector::insert(&mut sorted_rarities, j, *rarity);
+                    inserted = true;
+                    break
+                };
+                j = j + 1;
             };
+            if (!inserted) {
+                vector::push_back(&mut sorted_weights, weight);
+                vector::push_back(&mut sorted_rarities, *rarity);
+            };
+            
             i = i + 1;
         };
-
-        // Second pass: select rarity based on available tokens
+        
+        // Use random number to select initial rarity
         let roll = random_num % total_weight;
         let current_weight = (0 as u256);
+        
+        // Find initially selected rarity
         i = 0;
+        let selected_rarity = string::utf8(b"");
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
-            let avail_len = vector::length(avail_tokens);
+            let weight = *table::borrow(rarities, *rarity);
+            current_weight = current_weight + (weight as u256);
             
-            if (avail_len > 0) {
-                let weight = *table::borrow(rarities, *rarity);
-                current_weight = current_weight + (weight as u256);
-                if (roll < current_weight) {
-                    // Select token index using the remaining bits of random_num
-                    let token_index = ((random_num >> 64) % (avail_len as u256) as u64);
-                    let selected_token = *vector::borrow(avail_tokens, token_index);
-                    return (*rarity, selected_token, token_index)
-                };
+            if (roll < current_weight) {
+                selected_rarity = *rarity;
+                break
             };
             i = i + 1;
         };
         
-        abort error::invalid_state(ENO_TOKENS_AVAILABLE)
+        if (string::length(&selected_rarity) == 0) {
+            return (string::utf8(b""), string::utf8(b""), 0)
+        };
+        
+        // Check if selected rarity has available tokens and select one if available
+        let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, selected_rarity);
+        let avail_len = vector::length(avail_tokens);
+        if (avail_len > 0) {
+            // Safe conversion: avail_len is guaranteed to fit in u256
+            let avail_len_u256 = (avail_len as u256);
+            
+            // Calculate token index using full u256 randomness
+            let token_index = random_num % avail_len_u256;
+            
+            // Safe conversion back to u64: guaranteed to be less than avail_len
+            let token_index_u64 = (token_index as u64);
+            let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+            return (selected_rarity, selected_token, token_index_u64)
+        };
+        
+        // If no tokens in selected rarity, look for tokens in more common rarities
+        i = vector::length(&sorted_rarities) - 1;
+        while (i >= 0) {
+            let rarity = *vector::borrow(&sorted_rarities, i);
+            let weight = *vector::borrow(&sorted_weights, i);
+            if (weight > *table::borrow(rarities, selected_rarity)) {
+                let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+                let avail_len = vector::length(avail_tokens);
+                if (avail_len > 0) {
+                    // Safe conversion: avail_len is guaranteed to fit in u256
+                    let avail_len_u256 = (avail_len as u256);
+                    
+                    // Calculate token index using full u256 randomness
+                    let token_index = random_num % avail_len_u256;
+                    
+                    // Safe conversion back to u64: guaranteed to be less than avail_len
+                    let token_index_u64 = (token_index as u64);
+                    let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+                    return (rarity, selected_token, token_index_u64)
+                };
+            };
+            if (i > 0) {
+                i = i - 1;
+            } else {
+                break
+            };
+        };
+        
+        // If no tokens found in any rarity
+        (string::utf8(b""), string::utf8(b""), 0)
     }
 
     // Update distribution handler after minting - now using the exact index
