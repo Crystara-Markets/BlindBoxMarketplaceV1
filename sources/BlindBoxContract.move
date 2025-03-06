@@ -727,8 +727,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       token_uri: vector<u8>,
       rarity: vector<u8>,
       max_supply: u64
-    ) acquires Lootboxes {
-        let creator_addr = signer::address_of(creator);
+    ) /*acquires Lootboxes*/ {
+        /*let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
 
         // Get the lootbox
@@ -804,6 +804,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 timestamp: timestamp::now_microseconds()
             }
         );
+        */
+
+        assert!(false, error::invalid_argument(EDEPRECATED));
     }
 
   fun generate_token_name(id: u64): String {
@@ -1741,6 +1744,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let handler = table::borrow(&handlers.distribution_handlers, lootbox.collectionName);
         
+        if(get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(b"is_distribution_upgraded_by_default"))) {
+            return true
+        };
+
         // Check if all rarities are present in the handler
         let i = 0;
         let len = vector::length(&lootbox.rarity_keys);
@@ -2732,7 +2739,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         token_uris: vector<vector<u8>>,
         rarities: vector<vector<u8>>,
         max_supplies: vector<u64>
-    ) acquires Lootboxes {
+    ) acquires Lootboxes, LootboxDistributionHandlers {
         let creator_addr = signer::address_of(creator);
         let collection_name_str = string::utf8(collection_name);
 
@@ -2750,6 +2757,15 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // Verify the signer is the creator
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        // Check distribution upgrade status once
+        let is_upgraded = is_distribution_upgraded(lootbox);
+        let distribution_handler = if (is_upgraded) {
+            let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+            option::some(table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str))
+        } else {
+            option::none()
+        };
 
         let collection_resource_address = lootbox.collection_resource_address;
         let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
@@ -2797,7 +2813,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 string::utf8(token_uri),
                 creator_addr,
                 100,
-                5, // Royalty Percent
+                5,
                 token_mutability_settings,
                 property_keys, 
                 property_values,
@@ -2807,6 +2823,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Store token data
             vector::push_back(&mut lootbox.tokensInLootbox, token_name_str);
             table::add(&mut lootbox.token_rarity_mapping, token_name_str, rarity_str);
+
+            // If distribution is upgraded, add token to available tokens for its rarity
+            if (option::is_some(&distribution_handler)) {
+                let handler = option::borrow_mut(&mut distribution_handler);
+                let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity_str);
+                vector::push_back(avail_tokens, token_name_str);
+            };
 
             // Emit event for each token
             event::emit(
@@ -3021,6 +3044,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
 
         let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        init_distribution_handler_for_collection(
+            source_account,
+            string::utf8(collection_name)
+        );
+
+        internal_set_lootbox_extension_bool(&collection_signer, string::utf8(collection_name), string::utf8(b"is_distribution_upgraded_by_default"), true);
 
         // Set extension table values
         internal_set_lootbox_extension_string(&collection_signer, string::utf8(collection_name), string::utf8(b"url"), string::utf8(extension_url));
