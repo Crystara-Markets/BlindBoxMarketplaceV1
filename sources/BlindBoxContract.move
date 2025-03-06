@@ -1744,7 +1744,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let handler = table::borrow(&handlers.distribution_handlers, lootbox.collectionName);
         
-        if(get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(b"is_distribution_upgraded_by_default"))) {
+        let distribution_upgraded_option = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(b"is_distribution_upgraded_by_default"));
+        if(option::is_some(&distribution_upgraded_option) && *option::borrow(&distribution_upgraded_option) == true) {
             return true
         };
 
