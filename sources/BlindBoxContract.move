@@ -3547,7 +3547,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         Option<String>, // url
         Option<String>, // rarity_colors
         Option<bool>    // dynamic_seed_enabled
-    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions {
+    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
 
         // Called first as they borrow Lootbox
         let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
@@ -3641,7 +3641,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         String, // url
         String, // rarity_colors
         bool    // dynamic_seed_enabled
-    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions {
+    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
 
         // Called first as they borrow Lootbox
         let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
