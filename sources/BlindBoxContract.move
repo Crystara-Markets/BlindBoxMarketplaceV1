@@ -2176,7 +2176,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     public fun view_receivable_rarities(
         creator: address,
         collection_name: String,
-    ): vector<String> acquires Lootboxes, LootboxDistributionHandlers {
+    ): vector<String> acquires Lootboxes, LootboxDistributionHandlers, LootboxExtensions {
         let lootboxes = borrow_global<Lootboxes>(creator);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
         
