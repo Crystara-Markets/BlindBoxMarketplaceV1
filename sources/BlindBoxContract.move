@@ -2176,21 +2176,39 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     public fun view_receivable_rarities(
         creator: address,
         collection_name: String,
-    ): vector<String> acquires Lootboxes {
+    ): vector<String> acquires Lootboxes, LootboxDistributionHandlers {
         let lootboxes = borrow_global<Lootboxes>(creator);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
+        
+        let is_upgraded = is_distribution_upgraded(lootbox);
         let rarities = lootbox.rarity_keys;
         let receivable_list = vector::empty<String>();
-        let i = 0;
-        while (i < vector::length(&rarities)) {
-            let rarity = vector::borrow(&rarities, i);
-            let available_tokens = get_tokens_by_rarity(lootbox, *rarity);
-            if (vector::length(&available_tokens) > 0) {
-                vector::push_back(&mut receivable_list, *rarity);
+        
+        if (is_upgraded) {
+            let handlers = borrow_global<LootboxDistributionHandlers>(creator);
+            let handler = table::borrow(&handlers.distribution_handlers, collection_name);
+            
+            let i = 0;
+            while (i < vector::length(&rarities)) {
+                let rarity = vector::borrow(&rarities, i);
+                let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
+                if (vector::length(avail_tokens) > 0) {
+                    vector::push_back(&mut receivable_list, *rarity);
+                };
+                i = i + 1;
             };
-            i = i + 1;
+        } else {
+            let i = 0;
+            while (i < vector::length(&rarities)) {
+                let rarity = vector::borrow(&rarities, i);
+                let available_tokens = get_tokens_by_rarity(lootbox, *rarity);
+                if (vector::length(&available_tokens) > 0) {
+                    vector::push_back(&mut receivable_list, *rarity);
+                };
+                i = i + 1;
+            };
         };
+        
         receivable_list
     }
 
