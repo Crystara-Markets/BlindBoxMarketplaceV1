@@ -641,16 +641,25 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             error::invalid_argument(EINVALID_INPUT_LENGTHS)
         );
 
-        // Clear existing rarities if any from rarity keys
-        lootbox.rarity_keys = vector::empty<String>();
+        let existing_rarities_are_present_count = 0; 
 
-        // Remove old entries by checking each new rarity name
+        // Check if all existing rarities are present
         let i = 0;
         while (i < len) {
-            let rarity_name = string::utf8(*vector::borrow(&rarity_names, i));
-            assert!(!table::contains(&lootbox.rarities, rarity_name), error::invalid_argument(ECANNOT_DELETE_EXISTING_RARITY));
+            let new_rarity_name = string::utf8(*vector::borrow(&rarity_names, i));
+            if(table::contains(&lootbox.rarities, new_rarity_name)) {
+                existing_rarities_are_present_count = existing_rarities_are_present_count + 1;
+            };
+            
             i = i + 1;
         };
+
+        // If all existing rarities are not present, throw an error
+        assert!(existing_rarities_are_present_count == vector::length(&lootbox.rarity_keys), error::invalid_argument(ECANNOT_DELETE_EXISTING_RARITY));
+
+        lootbox.rarities = table::new<String, u64>();
+        lootbox.rarities_showItemWhenRoll = table::new<String, bool>();
+        lootbox.rarity_keys = vector::empty<String>();
 
         // Add new entries
         let i = 0;
@@ -3520,33 +3529,33 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: String
     ): (
         // Basic lootbox info
-        address, // creator
-        String,  // collection_name
-        String,  // description
-        String,  // collection_uri
+        address, // creator 0
+        String,  // collection_name 1
+        String,  // description 2
+        String,  // collection_uri 3
         // Token collection info
 
         // Status info (from get_lootbox_status)
-        u64,    // time_till_active
-        u64,    // time_till_whitelist
-        bool,   // is_active
-        bool,   // whitelist_mode
+        u64,    // time_till_active 4
+        u64,    // time_till_whitelist 5
+        bool,   // is_active 6
+        bool,   // whitelist_mode 7
         // Supply and price info
-        u64,    // maxRolls (maxsupply)
-        u64,    // rolled
-        u64,    // stock
-        u64,    // max_stock
-        u64,    // price
-        bool,   // requiresKey
+        u64,    // maxRolls (maxsupply) 8
+        u64,    // rolled 9
+        u64,    // stock 10
+        u64,    // max_stock 11
+        u64,    // price 12
+        bool,   // requiresKey 13
         // Rarity info (from get_lootbox_rarities)
-        vector<String>, // rarity_names
-        vector<u64>,    // weights
-        vector<bool>,   // show_items
-        vector<String>, // viewReceivableRarities
+        vector<String>, // rarity_names 14
+        vector<u64>,    // weights 15
+        vector<bool>,   // show_items 16
+        vector<String>, // viewReceivableRarities 17
         // Extension values
-        Option<String>, // url
-        Option<String>, // rarity_colors
-        Option<bool>    // dynamic_seed_enabled
+        Option<String>, // url 18
+        Option<String>, // rarity_colors 19
+        Option<bool>    // dynamic_seed_enabled 20
     ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
 
         // Called first as they borrow Lootbox
