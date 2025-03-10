@@ -2186,23 +2186,47 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator: address,
         collection_name: String,
     ): vector<String> acquires Lootboxes, LootboxDistributionHandlers, LootboxExtensions {
-        let lootboxes = borrow_global<Lootboxes>(creator);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        // Check if Lootboxes exists for creator
+        if (!exists<Lootboxes>(creator)) {
+            return vector::empty()
+        };
         
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        
+        // Check if collection exists in lootbox table
+        if (!table::contains(&lootboxes.lootbox_table, collection_name)) {
+            return vector::empty()
+        };
+        
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
         let is_upgraded = is_distribution_upgraded(lootbox);
         let rarities = lootbox.rarity_keys;
         let receivable_list = vector::empty<String>();
         
         if (is_upgraded) {
+            // Check if handlers exist
+            if (!exists<LootboxDistributionHandlers>(creator)) {
+                return vector::empty()
+            };
+            
             let handlers = borrow_global<LootboxDistributionHandlers>(creator);
+            
+            // Check if handler exists for this collection
+            if (!table::contains(&handlers.distribution_handlers, collection_name)) {
+                return vector::empty()
+            };
+            
             let handler = table::borrow(&handlers.distribution_handlers, collection_name);
             
             let i = 0;
             while (i < vector::length(&rarities)) {
                 let rarity = vector::borrow(&rarities, i);
-                let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
-                if (vector::length(avail_tokens) > 0) {
-                    vector::push_back(&mut receivable_list, *rarity);
+                // Check if rarity exists in handler
+                if (table::contains(&handler.avail_tokens_in_rarity, *rarity)) {
+                    let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, *rarity);
+                    if (vector::length(avail_tokens) > 0) {
+                        vector::push_back(&mut receivable_list, *rarity);
+                    };
                 };
                 i = i + 1;
             };
