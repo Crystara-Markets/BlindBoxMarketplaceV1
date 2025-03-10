@@ -670,12 +670,22 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             if(!table::contains(&lootbox.rarities, rarity_name)) 
             {
                 table::add(&mut lootbox.rarities, rarity_name, weight);
+            }
+            else {
+                //Borrow existing record and override weight
+                let existing_rarity = table::borrow_mut(&mut lootbox.rarities, rarity_name);
+                *existing_rarity = weight;
             };
 
             //Check if show item already exists
             if(!table::contains(&lootbox.rarities_showItemWhenRoll, rarity_name)) 
             {
                 table::add(&mut lootbox.rarities_showItemWhenRoll, rarity_name, show_item);
+            }
+            else {
+                //Borrow existing record and override show item
+                let existing_show_item = table::borrow_mut(&mut lootbox.rarities_showItemWhenRoll, rarity_name);
+                *existing_show_item = show_item;
             };
 
             vector::push_back(&mut lootbox.rarity_keys, rarity_name);
