@@ -657,8 +657,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // If all existing rarities are not present, throw an error
         assert!(existing_rarities_are_present_count == vector::length(&lootbox.rarity_keys), error::invalid_argument(ECANNOT_DELETE_EXISTING_RARITY));
 
-        lootbox.rarities = table::new<String, u64>();
-        lootbox.rarities_showItemWhenRoll = table::new<String, bool>();
         lootbox.rarity_keys = vector::empty<String>();
 
         // Add new entries
@@ -668,8 +666,18 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let weight = *vector::borrow(&rarity_weights, i);
             let show_item = *vector::borrow(&show_items_on_roll, i);
 
-            table::add(&mut lootbox.rarities, rarity_name, weight);
-            table::add(&mut lootbox.rarities_showItemWhenRoll, rarity_name, show_item);
+            //Check if rarity name already exists
+            if(!table::contains(&lootbox.rarities, rarity_name)) 
+            {
+                table::add(&mut lootbox.rarities, rarity_name, weight);
+            };
+
+            //Check if show item already exists
+            if(!table::contains(&lootbox.rarities_showItemWhenRoll, rarity_name)) 
+            {
+                table::add(&mut lootbox.rarities_showItemWhenRoll, rarity_name, show_item);
+            };
+
             vector::push_back(&mut lootbox.rarity_keys, rarity_name);
             
             i = i + 1;
