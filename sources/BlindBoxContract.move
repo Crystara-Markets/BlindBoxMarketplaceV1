@@ -1393,7 +1393,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
 
         let _ = random_num;
-        let _ = loobox;
+        let _ = lootbox;
         // Return tuple of (selected_rarity, selected_token, random_number)
         (string::utf8(b"DEPRECATED"), string::utf8(b"DEPRECATED"), 0)
     }
