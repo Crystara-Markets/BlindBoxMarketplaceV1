@@ -1379,7 +1379,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Return tuple of (selected_rarity, selected_token, random_number)
             return (selected_rarity, selected_token, random_num)
         };        
-        (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
     }
 
     //DEPRECATED
