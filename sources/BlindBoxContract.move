@@ -1379,7 +1379,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Return tuple of (selected_rarity, selected_token, random_number)
             return (selected_rarity, selected_token, random_num)
         };        
-        (selected_rarity, selected_token, random_num)
+        (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), random_num)
     }
 
     //DEPRECATED
@@ -1813,7 +1813,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         let len = vector::length(&lootbox.rarity_keys);
         if (len == 0) {
-            return (string::utf8(b""), string::utf8(b""), 0)
+            return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), 0)
         };
         
         // Calculate total weight and store sorted rarities by weight (descending)
@@ -1866,7 +1866,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         if (string::length(&selected_rarity) == 0) {
-            return (string::utf8(b""), string::utf8(b""), 0)
+            return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), 0)
         };
         
         // Check if selected rarity has available tokens and select one if available
@@ -1914,7 +1914,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         // If no tokens found in any rarity
-        (string::utf8(b""), string::utf8(b""), 0)
+        (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), 0)
     }
     
     fun has_at_least_one_available_token(
