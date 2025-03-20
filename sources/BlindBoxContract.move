@@ -1431,6 +1431,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let selected_token = string::utf8(b"");
             let token_index = 0;
 
+            let _ = selected_rarity;
+            let _ = selected_token;
+
             //New distribution logic
             if(is_distribution_upgraded(lootbox)) {
                 let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
@@ -2008,6 +2011,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let selected_token = string::utf8(b"");
         let token_index = 0;
 
+        let _ = selected_rarity;
+        let _ = selected_token;
+
         //New distribution logic
         if(is_distribution_upgraded(lootbox)) {
             let handlers = borrow_global_mut<LootboxDistributionHandlers>(pending_reward.creator);
@@ -2278,6 +2284,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     //UNUSED / DEPRECATED
     fun select_rarityV2(lootbox: &Lootbox, random_num: u256): String {
+        let _ = lootbox;
+        let _ = random_num;
         string::utf8(b"")
     }
 
