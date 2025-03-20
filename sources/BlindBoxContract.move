@@ -833,6 +833,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
         */
 
+        let _ = creator;
+        let _ = collection_name;
+        let _ = token_uri;
+        let _ = rarity;
+        let _ = max_supply;
+
         assert!(false, error::invalid_argument(EDEPRECATED));
     }
 
@@ -1040,6 +1046,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         */
+
+        let _ = creator;
+        let _ = collection_name;
+        let _ = token_name;
+        let _ = new_uri;
+        let _ = new_description;
+        let _ = new_rarity;
+        let _ = property_keys;
         assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
     }
 
@@ -1168,7 +1182,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Distribution not upgraded, use while loop to check if at least one token is available
             while (i < token_count) {
                 let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
-                let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
             
                 // Get token supply from the collection
                 let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
