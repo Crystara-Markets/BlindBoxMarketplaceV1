@@ -1054,6 +1054,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let _ = new_description;
         let _ = new_rarity;
         let _ = property_keys;
+        let _ = property_types;
+        let _ = property_values;
         assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
     }
 
@@ -1184,7 +1186,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
             
                 // Get token supply from the collection
-                let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
                 let token_data_id = token::create_token_data_id(
                     lootbox.collection_resource_address,
                     collection_name_str,
@@ -1342,14 +1343,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     ): (String, String, u256) acquires Lootboxes, LootboxDistributionHandlers, LootboxExtensions {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-        let selected_rarity = string::utf8(b"");
-        let selected_token = string::utf8(b"");
-        let token_index = 0;
         
         if(is_distribution_upgraded(lootbox)) {
             let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
             let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name);
-            let (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
+            let (selected_rarity, selected_token, _) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
             return (selected_rarity, selected_token, random_num)
         }
         else {
@@ -1381,8 +1379,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             // Return tuple of (selected_rarity, selected_token, random_number)
             return (selected_rarity, selected_token, random_num)
         };
-
-        (selected_rarity, selected_token, random_num)
     }
 
     //DEPRECATED
@@ -1395,6 +1391,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Get lootbox
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
+
+        let _ = random_num;
+        let _ = lootbox;
         // Return tuple of (selected_rarity, selected_token, random_number)
         (string::utf8(b"DEPRECATED"), string::utf8(b"DEPRECATED"), 0)
     }
@@ -1429,7 +1428,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
             
             let selected_rarity = string::utf8(b"");    
-            let selected_token = string::utf8(b"");
             let token_index = 0;
 
             //New distribution logic
@@ -2005,8 +2003,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let collection_name_str = pending_reward.collection_name;
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
         
-        let selected_rarity = string::utf8(b"");    
-        let selected_token = string::utf8(b"");
         let token_index = 0;
 
         //New distribution logic
