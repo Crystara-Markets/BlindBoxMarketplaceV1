@@ -1393,7 +1393,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
 
         let _ = random_num;
-        let _ = lootbox;
+        let _ = loobox;
         // Return tuple of (selected_rarity, selected_token, random_number)
         (string::utf8(b"DEPRECATED"), string::utf8(b"DEPRECATED"), 0)
     }
@@ -1428,6 +1428,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
             
             let selected_rarity = string::utf8(b"");    
+            let selected_token = string::utf8(b"");
             let token_index = 0;
 
             //New distribution logic
@@ -2003,6 +2004,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let collection_name_str = pending_reward.collection_name;
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
         
+        let selected_rarity = string::utf8(b"");    
+        let selected_token = string::utf8(b"");
         let token_index = 0;
 
         //New distribution logic
