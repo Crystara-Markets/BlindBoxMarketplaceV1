@@ -1378,8 +1378,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             
             // Return tuple of (selected_rarity, selected_token, random_number)
             return (selected_rarity, selected_token, random_num)
-        }        
-        (selected_rarity, selected_token, random_num);
+        };        
+        (selected_rarity, selected_token, random_num)
     }
 
     //DEPRECATED
