@@ -3801,15 +3801,17 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         address: address
     ): u64 acquires Lootboxes {
+        let collection_name_str = string::utf8(collection_name);
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
         assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
 
-        let amount = option::get_with_default(
-            &table::borrow(&lootbox.allow_mintList, address),
+        if(table::contains(&lootbox.allow_mintList, address)) {
+            let amount = *table::borrow(&lootbox.allow_mintList, address);
+            amount
+        } else {
             0
-        );
-        amount
+        }
     }
 
     public entry fun add_addresses_to_whitelist(
