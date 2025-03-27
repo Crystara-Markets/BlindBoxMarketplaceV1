@@ -2652,24 +2652,19 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
     }
 
-    // DEPRECATED VERSION OF SET WHITELIST AMOUNTS
     public entry fun set_whitelist_amounts(
         creator: &signer,
         collection_name: vector<u8>,
         addresses: vector<address>,
         amounts: vector<u64>
     ) acquires Lootboxes {
-        let creator_addr = signer::address_of(creator);
-        let collection_name_str = string::utf8(collection_name);
-
-        assert!(vector::length(&addresses) == vector::length(&amounts), error::invalid_argument(EINVALID_INPUT_LENGTHS));
-
-        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
-        assert!(false, error::not_found(EDEPRECATED))
+        add_addresses_to_whitelist(
+            creator,
+            string::utf8(collection_name),
+            addresses,
+            amounts,
+            true
+        );
     }
 
     // Set auto-activation time
@@ -3801,9 +3796,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         )
     }
 
-
-
-    public fun add_addresses_to_whitelist(
+    public entry fun add_addresses_to_whitelist(
         creator: &signer,
         collection_name: String,
         addresses: vector<address>,
