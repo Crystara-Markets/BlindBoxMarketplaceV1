@@ -1155,7 +1155,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
         }else {
             assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
-        }
+        };
 
         // Check if there is stock and rolls are not maxed out
         assert!(lootbox.stock > 0, error::not_found(ENOT_ENOUGH_STOCK));
