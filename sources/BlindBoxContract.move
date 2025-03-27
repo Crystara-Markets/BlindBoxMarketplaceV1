@@ -1149,15 +1149,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Check whitelist if enabled
         let buyer_addr = signer::address_of(buyer);
-        let allow_whitelist_minting = false;
         if (lootbox.whitelistMode) {
             assert!(table::contains(&lootbox.allow_mintList, buyer_addr), error::permission_denied(ENOT_WHITELISTED));
             let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
-        };
-
-        // Check if lootbox is active
-        assert!(lootbox.whitelistMode == false && lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
+        }else {
+            assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
+        }
 
         // Check if there is stock and rolls are not maxed out
         assert!(lootbox.stock > 0, error::not_found(ENOT_ENOUGH_STOCK));
