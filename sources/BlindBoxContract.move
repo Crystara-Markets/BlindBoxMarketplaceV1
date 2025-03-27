@@ -1147,15 +1147,14 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             );
         };
 
-        // Check if lootbox is active
-        assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
-
         // Check whitelist if enabled
         let buyer_addr = signer::address_of(buyer);
         if (lootbox.whitelistMode) {
             assert!(table::contains(&lootbox.allow_mintList, buyer_addr), error::permission_denied(ENOT_WHITELISTED));
             let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
+        }else {
+            assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
         };
 
         // Check if there is stock and rolls are not maxed out
@@ -2652,24 +2651,19 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         );
     }
 
-    // DEPRECATED VERSION OF SET WHITELIST AMOUNTS
     public entry fun set_whitelist_amounts(
         creator: &signer,
         collection_name: vector<u8>,
         addresses: vector<address>,
         amounts: vector<u64>
     ) acquires Lootboxes {
-        let creator_addr = signer::address_of(creator);
-        let collection_name_str = string::utf8(collection_name);
-
-        assert!(vector::length(&addresses) == vector::length(&amounts), error::invalid_argument(EINVALID_INPUT_LENGTHS));
-
-        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
-        assert!(false, error::not_found(EDEPRECATED))
+        add_addresses_to_whitelist(
+            creator,
+            string::utf8(collection_name),
+            addresses,
+            amounts,
+            true
+        );
     }
 
     // Set auto-activation time
@@ -3799,6 +3793,25 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             rarity_colors,
             dynamic_seed_enabled
         )
+    }
+
+    #[view]
+    public fun get_whitelist_amount(
+        creator_addr: address,
+        collection_name: vector<u8>,
+        address: address
+    ): u64 acquires Lootboxes {
+        let collection_name_str = string::utf8(collection_name);
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        if(table::contains(&lootbox.allow_mintList, address)) {
+            let amount = *table::borrow(&lootbox.allow_mintList, address);
+            amount
+        } else {
+            0
+        }
     }
 
     public entry fun add_addresses_to_whitelist(
