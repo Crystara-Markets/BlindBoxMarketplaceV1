@@ -3801,7 +3801,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         )
     }
 
-    public entry fun add_addresses_to_whitelist(
+
+
+    public fun add_addresses_to_whitelist(
         creator: &signer,
         collection_name: String,
         addresses: vector<address>,
