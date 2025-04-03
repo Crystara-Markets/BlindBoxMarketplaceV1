@@ -3504,7 +3504,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         if(string::length(&key_str) > string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY))) {
             let substr = string::sub_string(&key_str,0,string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY)));
             if(substr == string::utf8(EXTENSION_MAX_MINTS_KEY)) {
-                emit_event = true;
+                emit_event = false;
             };
         };
 
