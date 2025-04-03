@@ -756,7 +756,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: vector<u8>,
         max_mints_per_wallet_toggle: bool,
         max_mints_per_wallet_amount: u64
-    ) acquires Lootboxes {
+    ) acquires Lootboxes, LootboxExtensions {
         let owner_addr = signer::address_of(creator);
         let lootbox_name_str = string::utf8(collection_name);
 
