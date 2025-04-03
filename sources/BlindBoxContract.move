@@ -25,6 +25,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use supra_addr::supra_vrf;
     use supra_addr::deposit;
     use std::bcs;
+    use std::string_utils::{Self};
 
     // Constants
     const RESOURCE_ACCOUNT_SEED: vector<u8> = b"LOOTBOX_RESOURCE_V17";
@@ -1224,7 +1225,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
             let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
-            string::append(&mut max_mints_per_current_wallet_key, address::to_string(&buyer_addr));
+            string::append(&mut max_mints_per_current_wallet_key, string_utils::to_string_with_canonical_addresses(&buyer_addr));
 
             let current_wallet_mint_count = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, max_mints_per_current_wallet_key);
             if(current_wallet_mint_count == option::none()) {
@@ -3503,7 +3504,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         if(string::length(&key_str) > string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY))) {
             let substr = string::sub_string(&key_str,0,string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY)));
             if(substr == string::utf8(EXTENSION_MAX_MINTS_KEY)) {
-                emit_event = false;
+                emit_event = true;
             };
         };
 
