@@ -3436,8 +3436,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let substr = string::sub_string(key_str,0,string::length(string::utf8(EXTENSION_MAX_MINTS_PER_WALLET)));
             if(substr == string::utf8(EXTENSION_MAX_MINTS_PER_WALLET)) {
                 emit_event = false;
-            }
-        }
+            };
+        };
 
         if(emit_event) {
             event::emit(
