@@ -33,6 +33,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
+    const EXTENSION_MAX_MINTS_PER_WALLET: vector<u8> = b"max_mints_per_wallet";
+
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
     const ECOLLECTION_EXISTS: u64 = 2;
@@ -3428,16 +3430,27 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             table::add(&mut extension.extended_u64, key_str, value);
         };
 
-        event::emit(
-            LootboxExtensionUpdatedEventV2 {
+        let emit_event = true;
+
+        if(string::length(key_str) > string::length(string::utf8(EXTENSION_MAX_MINTS_PER_WALLET))) {
+            let substr = string::sub_string(key_str,0,string::length(string::utf8(EXTENSION_MAX_MINTS_PER_WALLET)));
+            if(substr == string::utf8(EXTENSION_MAX_MINTS_PER_WALLET)) {
+                emit_event = false;
+            }
+        }
+
+        if(emit_event) {
+            event::emit(
+                LootboxExtensionUpdatedEventV2 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
                 updated_value: string::utf8(bcs::to_bytes(&value)),
                 updated_key_type: string::utf8(b"u64"),
-                timestamp: timestamp::now_microseconds(),
-            }
-        );
+                    timestamp: timestamp::now_microseconds(),
+                }
+            );
+        }
     }
 
     fun internal_set_lootbox_extension_u256(
