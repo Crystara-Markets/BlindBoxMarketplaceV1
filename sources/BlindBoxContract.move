@@ -1223,8 +1223,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             };
 
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY_CURRENT_WALLET); 
-            string::append(&mut max_mints_per_current_wallet_key, &buyer_addr);
+            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
+            string::append(&mut max_mints_per_current_wallet_key, address::to_string(&buyer_addr));
 
             let current_wallet_mint_count = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, max_mints_per_current_wallet_key);
             if(current_wallet_mint_count == option::none()) {
