@@ -33,7 +33,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
-    const EXTENSION_MAX_MINTS_PER_WALLET: vector<u8> = b"max_mints_per_wallet";
+    const EXTENSION_MAX_MINTS_KEY: vector<u8> = b"max_mints_per_wallet";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -89,6 +89,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ERARITY_NOTEXISTS: u64 = 51;
     const ECANNOT_DELETE_EXISTING_RARITY: u64 = 52;
     const ENO_PERMISSION: u64 = 53;
+    const EMAX_MINTS_PER_WALLET_NOT_SET: u64 = 54;
+    const EMAX_MINTS_PER_WALLET_AMOUNT_ZERO: u64 = 55;
+    const EMAX_MINTS_PER_WALLET_AMOUNT_REACHED: u64 = 56;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -747,6 +750,39 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
     }
 
+    public entry fun set_max_mints_per_wallet(
+        creator: &signer,
+        collection_name: vector<u8>,
+        max_mints_per_wallet_toggle: bool,
+        max_mints_per_wallet_amount: u64
+    ) acquires Lootboxes {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_MAX_MINTS_KEY),
+            max_mints_per_wallet_toggle
+        );
+
+        if(max_mints_per_wallet_toggle) {
+            internal_set_lootbox_extension_u64(
+                &resource_signer,
+                lootbox_name_str,
+                string::utf8(EXTENSION_MAX_MINTS_KEY),
+                max_mints_per_wallet_amount
+            );
+        };
+    }
+
 
 
   //Add Token To Lootbox
@@ -1163,11 +1199,43 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(lootbox.stock > 0, error::not_found(ENOT_ENOUGH_STOCK));
         assert!(lootbox.rolled < lootbox.maxRolls, error::not_found(EMAX_ROLLS_REACHED) );
 
+        // Check if dynamic seed is enabled
         let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(b"dynamic_seed_enabled"));
         if (dynamic_seed == option::none()) {
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
             // Store seed in extension
             internal_set_lootbox_extension_bool(&collection_signer, collection_name_str, string::utf8(b"dynamic_seed_enabled"), true);
+        };
+
+        // Max Mint per wallet check
+        let max_mints_per_wallet_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_KEY));
+        if(max_mints_per_wallet_toggle == option::some(true)) {
+            
+            let max_mints_per_wallet_amount = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_KEY));
+            if(max_mints_per_wallet_amount == option::none()) {
+                assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_NOT_SET));
+            };
+
+            let max_mints_per_wallet_amount = *option::borrow(&max_mints_per_wallet_amount);
+
+            if(max_mints_per_wallet_amount == 0) {
+                assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_AMOUNT_ZERO));
+            };
+
+            let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY_CURRENT_WALLET); 
+            string::append(&mut max_mints_per_current_wallet_key, &buyer_addr);
+
+            let current_wallet_mint_count = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, max_mints_per_current_wallet_key);
+            if(current_wallet_mint_count == option::none()) {
+                internal_set_lootbox_extension_u64(&collection_signer, collection_name_str, max_mints_per_current_wallet_key, 1);
+            }else {
+                let current_wallet_mint_count = *option::borrow(&current_wallet_mint_count);
+                if(current_wallet_mint_count >= max_mints_per_wallet_amount) {
+                    assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_AMOUNT_REACHED));
+                };
+                internal_set_lootbox_extension_u64(&collection_signer, collection_name_str, max_mints_per_current_wallet_key, current_wallet_mint_count + 1);
+            }
         };
 
 
@@ -3432,9 +3500,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let emit_event = true;
 
-        if(string::length(&key_str) > string::length(&string::utf8(EXTENSION_MAX_MINTS_PER_WALLET))) {
-            let substr = string::sub_string(&key_str,0,string::length(&string::utf8(EXTENSION_MAX_MINTS_PER_WALLET)));
-            if(substr == string::utf8(EXTENSION_MAX_MINTS_PER_WALLET)) {
+        if(string::length(&key_str) > string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY))) {
+            let substr = string::sub_string(&key_str,0,string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY)));
+            if(substr == string::utf8(EXTENSION_MAX_MINTS_KEY)) {
                 emit_event = false;
             };
         };
