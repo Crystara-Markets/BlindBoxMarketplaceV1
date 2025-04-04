@@ -3973,13 +3973,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
 
             let val_is_max_mints_enabled = option::get_with_default(
-                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, EXTENSION_MAX_MINTS_KEY),
+                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
                 false
             );
             is_max_mints_enabled = val_is_max_mints_enabled;
 
             let val_max_mints_globally = option::get_with_default(
-                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, EXTENSION_MAX_MINTS_KEY),
+                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
                 0
             );
             max_mints_globally = val_max_mints_globally;
