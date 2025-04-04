@@ -25,6 +25,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     use supra_addr::supra_vrf;
     use supra_addr::deposit;
     use std::bcs;
+    use std::string_utils::{Self};
 
     // Constants
     const RESOURCE_ACCOUNT_SEED: vector<u8> = b"LOOTBOX_RESOURCE_V1";
@@ -32,6 +33,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const CALLBACK_MODULE_NAME: vector<u8> = b"crystara_blindbox_v1";
 
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
+
+    const EXTENSION_MAX_MINTS_KEY: vector<u8> = b"max_mints_per_wallet";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -87,6 +90,9 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const ERARITY_NOTEXISTS: u64 = 51;
     const ECANNOT_DELETE_EXISTING_RARITY: u64 = 52;
     const ENO_PERMISSION: u64 = 53;
+    const EMAX_MINTS_PER_WALLET_NOT_SET: u64 = 54;
+    const EMAX_MINTS_PER_WALLET_AMOUNT_ZERO: u64 = 55;
+    const EMAX_MINTS_PER_WALLET_AMOUNT_REACHED: u64 = 56;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -745,6 +751,39 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         
     }
 
+    public entry fun set_max_mints_per_wallet(
+        creator: &signer,
+        collection_name: vector<u8>,
+        max_mints_per_wallet_toggle: bool,
+        max_mints_per_wallet_amount: u64
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_MAX_MINTS_KEY),
+            max_mints_per_wallet_toggle
+        );
+
+        if(max_mints_per_wallet_toggle) {
+            internal_set_lootbox_extension_u64(
+                &resource_signer,
+                lootbox_name_str,
+                string::utf8(EXTENSION_MAX_MINTS_KEY),
+                max_mints_per_wallet_amount
+            );
+        };
+    }
+
 
 
   //Add Token To Lootbox
@@ -1161,11 +1200,43 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         assert!(lootbox.stock > 0, error::not_found(ENOT_ENOUGH_STOCK));
         assert!(lootbox.rolled < lootbox.maxRolls, error::not_found(EMAX_ROLLS_REACHED) );
 
+        // Check if dynamic seed is enabled
         let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(b"dynamic_seed_enabled"));
         if (dynamic_seed == option::none()) {
             let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
             // Store seed in extension
             internal_set_lootbox_extension_bool(&collection_signer, collection_name_str, string::utf8(b"dynamic_seed_enabled"), true);
+        };
+
+        // Max Mint per wallet check
+        let max_mints_per_wallet_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_KEY));
+        if(max_mints_per_wallet_toggle == option::some(true)) {
+            
+            let max_mints_per_wallet_amount = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_KEY));
+            if(max_mints_per_wallet_amount == option::none()) {
+                assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_NOT_SET));
+            };
+
+            let max_mints_per_wallet_amount = *option::borrow(&max_mints_per_wallet_amount);
+
+            if(max_mints_per_wallet_amount == 0) {
+                assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_AMOUNT_ZERO));
+            };
+
+            let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
+            string::append(&mut max_mints_per_current_wallet_key, string_utils::to_string_with_canonical_addresses(&buyer_addr));
+
+            let current_wallet_mint_count = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, max_mints_per_current_wallet_key);
+            if(current_wallet_mint_count == option::none()) {
+                internal_set_lootbox_extension_u64(&collection_signer, collection_name_str, max_mints_per_current_wallet_key, 1);
+            }else {
+                let current_wallet_mint_count = *option::borrow(&current_wallet_mint_count);
+                if(current_wallet_mint_count >= max_mints_per_wallet_amount) {
+                    assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_AMOUNT_REACHED));
+                };
+                internal_set_lootbox_extension_u64(&collection_signer, collection_name_str, max_mints_per_current_wallet_key, current_wallet_mint_count + 1);
+            }
         };
 
 
@@ -3395,7 +3466,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
-                updated_value: string::utf8(bcs::to_bytes(&value)),
+                updated_value: string_utils::to_string(&value),
                 updated_key_type: string::utf8(b"bool"),
                 timestamp: timestamp::now_microseconds(),
             }
@@ -3428,16 +3499,27 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             table::add(&mut extension.extended_u64, key_str, value);
         };
 
-        event::emit(
-            LootboxExtensionUpdatedEventV2 {
+        let emit_event = true;
+
+        if(string::length(&key_str) > string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY))) {
+            let substr = string::sub_string(&key_str,0,string::length(&string::utf8(EXTENSION_MAX_MINTS_KEY)));
+            if(substr == string::utf8(EXTENSION_MAX_MINTS_KEY)) {
+                emit_event = false;
+            };
+        };
+
+        if(emit_event) {
+            event::emit(
+                LootboxExtensionUpdatedEventV2 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
-                updated_value: string::utf8(bcs::to_bytes(&value)),
+                updated_value: string_utils::to_string_with_integer_types(&value),
                 updated_key_type: string::utf8(b"u64"),
-                timestamp: timestamp::now_microseconds(),
-            }
-        );
+                    timestamp: timestamp::now_microseconds(),
+                }
+            );
+        }
     }
 
     fun internal_set_lootbox_extension_u256(
@@ -3471,7 +3553,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
                 creator: creator_addr,
                 collection_name: collection_name_str,
                 updated_key: key_str,
-                updated_value: string::utf8(bcs::to_bytes(&value)),
+                updated_value: string_utils::to_string_with_integer_types(&value),
                 updated_key_type: string::utf8(b"u256"),
                 timestamp: timestamp::now_microseconds(),
             }
@@ -3792,6 +3874,167 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             url,
             rarity_colors,
             dynamic_seed_enabled
+        )
+    }
+
+    #[view]
+    public fun get_lootbox_info_v3<CoinType>(
+        creator_addr: address,
+        collection_name: String,
+        viewer_addr_str: String
+    ): (
+        // Basic lootbox info
+        address, // creator
+        String,  // collection_name
+        String,  // description
+        String,  // collection_uri
+        // Token collection info
+
+        // Status info (from get_lootbox_status)
+        u64,    // time_till_active
+        u64,    // time_till_whitelist
+        bool,   // is_active
+        bool,   // whitelist_mode
+        // Supply and price info
+        u64,    // maxRolls (maxsupply)
+        u64,    // rolled
+        u64,    // stock
+        u64,    // max_stock
+        u64,    // price
+        bool,   // requiresKey
+        // Rarity info (from get_lootbox_rarities)
+        vector<String>, // rarity_names
+        vector<u64>,    // weights
+        vector<bool>,   // show_items
+        vector<String>, // viewReceivableRarities
+        // Extension values
+        String, // url
+        String, // rarity_colors
+        bool,    // dynamic_seed_enabled 
+        bool,    // is max mints enabled
+        u64,     // max mints globally
+        u64,     // mints remaining for viewer
+    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
+
+        // Called first as they borrow Lootbox
+        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
+        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
+
+        // Get status
+        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
+            get_lootbox_status(creator_addr, collection_name);
+        
+        // Get rarity info
+        let (rarity_names, weights, show_items) = 
+            get_lootbox_rarities(creator_addr, collection_name);
+        
+        // Get supply info
+        let rolled = get_lootbox_rolled(creator_addr, collection_name);
+        
+
+        // Get extension values
+        let url = {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"url")),
+                string::utf8(b"")
+            );
+            value
+        };
+        let rarity_colors = { 
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"rarity_colors")),
+                string::utf8(b"")
+            );
+            value
+        };
+        let dynamic_seed_enabled = {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(b"dynamic_seed_enabled")),
+                false
+            );
+            value
+        };
+
+        let is_max_mints_enabled = false;
+        let max_mints_globally = 0;
+        let mints_remaining_for_viewer = 0;
+
+        {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let val_is_max_mints_enabled = option::get_with_default(
+                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
+                false
+            );
+            is_max_mints_enabled = val_is_max_mints_enabled;
+
+            let val_max_mints_globally = option::get_with_default(
+                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
+                0
+            );
+            max_mints_globally = val_max_mints_globally;
+
+            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
+            string::append(&mut max_mints_per_current_wallet_key, viewer_addr_str);
+            let val_mints_by_viewer = option::get_with_default(
+                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, max_mints_per_current_wallet_key),
+                0
+            );
+            if(max_mints_globally >= val_mints_by_viewer) {
+                mints_remaining_for_viewer = max_mints_globally - val_mints_by_viewer;
+            } else {
+                mints_remaining_for_viewer = 0;
+            };
+        };
+
+        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
+        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
+
+        (
+            // Basic lootbox info
+            lootbox.creator,
+            collection_name,
+            lootbox_description,
+            lootbox_uri,
+            // Token collection info
+            // Status info
+            time_till_active,
+            time_till_whitelist,
+            is_active,
+            whitelist_mode,
+            // Supply and price info
+            lootbox.maxRolls,
+            rolled,
+            lootbox.stock,
+            lootbox.maxRolls,
+            price,
+            lootbox.requiresKey,
+            // Rarity info
+            rarity_names,
+            weights,
+            show_items,
+            viewReceivableRarities,
+            // Extension values
+            url,
+            rarity_colors,
+            dynamic_seed_enabled,
+            is_max_mints_enabled,
+            max_mints_globally,
+            mints_remaining_for_viewer
         )
     }
 
