@@ -1962,7 +1962,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         while (i >= 0) {
             let rarity = *vector::borrow(&sorted_rarities, i);
             let weight = *vector::borrow(&sorted_weights, i);
-            if (weight > *table::borrow(rarities, selected_rarity)) {
+            if (weight >= *table::borrow(rarities, selected_rarity)) {
                 let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
                 let avail_len = vector::length(avail_tokens);
                 if (avail_len > 0) {
@@ -1983,6 +1983,26 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             } else {
                 break
             };
+        };
+
+        // If no tokens in selected commoner rarities, look for tokens in rarer rarities
+        let i = 0;
+        let len = vector::length(&sorted_rarities);
+        while (i < len) {
+            let rarity = *vector::borrow(&sorted_rarities, i);
+            let weight = *vector::borrow(&sorted_weights, i);
+            if (weight <= *table::borrow(rarities, selected_rarity)) {
+                let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+                let avail_len = vector::length(avail_tokens);
+                if (avail_len > 0) {
+                    let avail_len_u256 = (avail_len as u256);
+                    let token_index = random_num % avail_len_u256;
+                    let token_index_u64 = (token_index as u64);
+                    let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+                    return (rarity, selected_token, token_index_u64)
+                };
+            };
+            i = i + 1;
         };
         
         // If no tokens found in any rarity
