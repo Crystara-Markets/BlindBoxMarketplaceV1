@@ -35,6 +35,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
     const EXTENSION_MAX_MINTS_KEY: vector<u8> = b"max_mints_per_wallet";
+    const EXTENSION_STEP_DOWN_RARITY_KEY: vector<u8> = b"step_down_rarity_distribution";
+    const EXTENSION_STEP_UP_RARITY_KEY: vector<u8> = b"step_up_rarity_distribution";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -782,6 +784,38 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 max_mints_per_wallet_amount
             );
         };
+    }
+
+    public entry fun set_extension_rarity_distributions_toggle(
+        creator: &signer,
+        collection_name: vector<u8>,
+        step_up_rarity_toggle: bool,
+        step_down_rarity_toggle: bool
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_STEP_UP_RARITY_KEY),
+            step_up_rarity_toggle
+        );
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_STEP_DOWN_RARITY_KEY),
+            step_down_rarity_toggle
+        );
+        
     }
 
 
@@ -1957,7 +1991,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             return (selected_rarity, selected_token, token_index_u64)
         };
         
-        let step_down_rarity_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(b"step_down_rarity_toggle"));
+        let step_down_rarity_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(EXTENSION_STEP_DOWN_RARITY_KEY));
         if (step_down_rarity_toggle == option::some(true) || step_down_rarity_toggle == option::none()) {
             // If no tokens in selected rarity, look for tokens in more common rarities
             i = vector::length(&sorted_rarities) - 1;
@@ -1989,7 +2023,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         // If Option for rarer tokens is true, look for tokens in rarer rarities
-        let step_up_rarity_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(b"step_up_rarity_toggle"));
+        let step_up_rarity_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(EXTENSION_STEP_UP_RARITY_KEY));
         if (step_up_rarity_toggle == option::some(true) || step_up_rarity_toggle == option::none()) {
             // If no tokens in selected commoner rarities, look for tokens in rarer rarities
             i = 0;
@@ -4064,6 +4098,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             mints_remaining_for_viewer
         )
     }
+        
 
     #[view]
     public fun get_whitelist_amount(
