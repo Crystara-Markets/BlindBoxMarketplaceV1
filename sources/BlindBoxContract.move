@@ -1879,7 +1879,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         lootbox: &Lootbox,
         random_num: u256,
         handler: &mut LootboxDistributionHandler
-    ): (String, String, u64) {
+    ): (String, String, u64) acquires LootboxExtensions {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
         
