@@ -35,6 +35,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
     const EXTENSION_MAX_MINTS_KEY: vector<u8> = b"max_mints_per_wallet";
+    const EXTENSION_STEP_DOWN_RARITY_KEY: vector<u8> = b"step_down_rarity_distribution";
+    const EXTENSION_STEP_UP_RARITY_KEY: vector<u8> = b"step_up_rarity_distribution";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -782,6 +784,38 @@ module projectOwnerAdr::crystara_blindbox_v1 {
                 max_mints_per_wallet_amount
             );
         };
+    }
+
+    public entry fun set_extension_rarity_distributions_toggle(
+        creator: &signer,
+        collection_name: vector<u8>,
+        step_up_rarity_toggle: bool,
+        step_down_rarity_toggle: bool
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_STEP_UP_RARITY_KEY),
+            step_up_rarity_toggle
+        );
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_STEP_DOWN_RARITY_KEY),
+            step_down_rarity_toggle
+        );
+        
     }
 
 
@@ -1879,7 +1913,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         lootbox: &Lootbox,
         random_num: u256,
         handler: &mut LootboxDistributionHandler
-    ): (String, String, u64) {
+    ): (String, String, u64) acquires LootboxExtensions {
         let total_weight = (0 as u256);
         let rarities = &lootbox.rarities;
         
@@ -1957,31 +1991,58 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             return (selected_rarity, selected_token, token_index_u64)
         };
         
-        // If no tokens in selected rarity, look for tokens in more common rarities
-        i = vector::length(&sorted_rarities) - 1;
-        while (i >= 0) {
-            let rarity = *vector::borrow(&sorted_rarities, i);
-            let weight = *vector::borrow(&sorted_weights, i);
-            if (weight > *table::borrow(rarities, selected_rarity)) {
-                let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
-                let avail_len = vector::length(avail_tokens);
-                if (avail_len > 0) {
-                    // Safe conversion: avail_len is guaranteed to fit in u256
-                    let avail_len_u256 = (avail_len as u256);
-                    
-                    // Calculate token index using full u256 randomness
-                    let token_index = random_num % avail_len_u256;
-                    
-                    // Safe conversion back to u64: guaranteed to be less than avail_len
-                    let token_index_u64 = (token_index as u64);
-                    let selected_token = *vector::borrow(avail_tokens, token_index_u64);
-                    return (rarity, selected_token, token_index_u64)
+        let step_down_rarity_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(EXTENSION_STEP_DOWN_RARITY_KEY));
+        if (step_down_rarity_toggle == option::some(true) || step_down_rarity_toggle == option::none()) {
+            // If no tokens in selected rarity, look for tokens in more common rarities
+            i = vector::length(&sorted_rarities) - 1;
+            while (i >= 0) {
+                let rarity = *vector::borrow(&sorted_rarities, i);
+                let weight = *vector::borrow(&sorted_weights, i);
+                if (weight >= *table::borrow(rarities, selected_rarity)) {
+                    let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+                    let avail_len = vector::length(avail_tokens);
+                    if (avail_len > 0) {
+                        // Safe conversion: avail_len is guaranteed to fit in u256
+                        let avail_len_u256 = (avail_len as u256);
+                        
+                        // Calculate token index using full u256 randomness
+                        let token_index = random_num % avail_len_u256;
+                        
+                        // Safe conversion back to u64: guaranteed to be less than avail_len
+                        let token_index_u64 = (token_index as u64);
+                        let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+                        return (rarity, selected_token, token_index_u64)
+                    };
+                };
+                if (i > 0) {
+                    i = i - 1;
+                } else {
+                    break
                 };
             };
-            if (i > 0) {
-                i = i - 1;
-            } else {
-                break
+        };
+
+        // If Option for rarer tokens is true, look for tokens in rarer rarities
+        let step_up_rarity_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, lootbox.collectionName, string::utf8(EXTENSION_STEP_UP_RARITY_KEY));
+        if (step_up_rarity_toggle == option::some(true) || step_up_rarity_toggle == option::none()) {
+            // If no tokens in selected commoner rarities, look for tokens in rarer rarities
+            i = 0;
+            let len = vector::length(&sorted_rarities);
+            while (i < len) {
+                let rarity = *vector::borrow(&sorted_rarities, i);
+                let weight = *vector::borrow(&sorted_weights, i);
+                if (weight <= *table::borrow(rarities, selected_rarity)) {
+                    let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+                    let avail_len = vector::length(avail_tokens);
+                    if (avail_len > 0) {
+                        let avail_len_u256 = (avail_len as u256);
+                        let token_index = random_num % avail_len_u256;
+                        let token_index_u64 = (token_index as u64);
+                        let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+                        return (rarity, selected_token, token_index_u64)
+                    };
+                };
+                i = i + 1;
             };
         };
         
@@ -4037,6 +4098,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             mints_remaining_for_viewer
         )
     }
+        
 
     #[view]
     public fun get_whitelist_amount(
