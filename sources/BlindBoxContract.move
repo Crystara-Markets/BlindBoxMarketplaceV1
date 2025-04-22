@@ -1222,7 +1222,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Check whitelist if enabled
         let buyer_addr = signer::address_of(buyer);
-        if (lootbox.whitelistMode) {
+        if (lootbox.whitelistMode && !lootbox.is_active) {
             assert!(table::contains(&lootbox.allow_mintList, buyer_addr), error::permission_denied(ENOT_WHITELISTED));
             let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
