@@ -1267,8 +1267,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
 
                 internal_set_lootbox_extension_u64(
-                    &resource_signer,
-                    lootbox_name_str,
+                    &collection_signer,
+                    collection_name_str,
                     string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY),
                     current_mints_in_whitelist_phase);
             };
