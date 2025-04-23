@@ -37,6 +37,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EXTENSION_MAX_MINTS_KEY: vector<u8> = b"max_mints_per_wallet";
     const EXTENSION_STEP_DOWN_RARITY_KEY: vector<u8> = b"step_down_rarity_distribution";
     const EXTENSION_STEP_UP_RARITY_KEY: vector<u8> = b"step_up_rarity_distribution";
+    const EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY: vector<u8> = b"max_mints_in_whitelist_phase";
+    const EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY: vector<u8> = b"current_mints_in_whitelist_phase";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -95,6 +97,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EMAX_MINTS_PER_WALLET_NOT_SET: u64 = 54;
     const EMAX_MINTS_PER_WALLET_AMOUNT_ZERO: u64 = 55;
     const EMAX_MINTS_PER_WALLET_AMOUNT_REACHED: u64 = 56;
+    const EMAX_MINTS_IN_WHITELIST_PHASE_REACHED: u64 = 57;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -786,6 +789,29 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
     }
 
+    public entry fun set_max_mints_in_whitelist_phase(
+        creator: &signer,
+        collection_name: vector<u8>,
+        max_mints_in_whitelist_phase: u64
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_u64(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY),
+            max_mints_in_whitelist_phase
+        );
+    }
+
     public entry fun set_extension_rarity_distributions_toggle(
         creator: &signer,
         collection_name: vector<u8>,
@@ -1226,6 +1252,28 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             assert!(table::contains(&lootbox.allow_mintList, buyer_addr), error::permission_denied(ENOT_WHITELISTED));
             let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
+
+            let max_mints_in_whitelist_phase = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
+            if(max_mints_in_whitelist_phase != option::none()) {
+                let max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase);
+                let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
+                let current_mints_in_whitelist_phase = 0;
+                
+                if(current_mints_in_whitelist_phase_extension != option::none()) {
+                    current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
+                };
+
+                current_mints_in_whitelist_phase = current_mints_in_whitelist_phase + 1;
+                assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
+
+                internal_set_lootbox_extension_u64(
+                    &resource_signer,
+                    lootbox_name_str,
+                    string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY),
+                    current_mints_in_whitelist_phase);
+            };
+            
+
         }else {
             assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
         };
