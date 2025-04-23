@@ -1471,7 +1471,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         table::add(&mut pending_rewards.rewards, nonce, pending_reward);
 
         // Update whitelist amount at the end of successful purchase
-        if (lootbox.whitelistMode) {
+        if (lootbox.whitelistMode && !lootbox.is_active) {
             let remaining_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr) - 1;
             *table::borrow_mut(&mut lootbox.allow_mintList, buyer_addr) = remaining_amount;
         };
