@@ -1253,6 +1253,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
 
+            //Max mints during whitelist phase
             let max_mints_in_whitelist_phase = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
             if(max_mints_in_whitelist_phase != option::none()) {
                 let max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase);
