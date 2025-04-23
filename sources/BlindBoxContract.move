@@ -1265,7 +1265,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 };
 
                 current_mints_in_whitelist_phase = current_mints_in_whitelist_phase + 1;
-                assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
+                
+                if(max_mints_in_whitelist_phase > 0) {
+                    assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
+                };
 
                 let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
                 internal_set_lootbox_extension_u64(
