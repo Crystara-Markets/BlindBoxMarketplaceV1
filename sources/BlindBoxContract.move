@@ -1257,25 +1257,29 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let max_mints_in_whitelist_phase = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
             if(max_mints_in_whitelist_phase != option::none()) {
                 let max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase);
-                let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
-                let current_mints_in_whitelist_phase = 0;
-                
-                if(current_mints_in_whitelist_phase_extension != option::none()) {
-                    current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
-                };
-                
+
+                //This is "enabled" check. If its 0, its not enabled.
                 if(max_mints_in_whitelist_phase > 0) {
-                    assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
-                };
+                    let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
+                    let current_mints_in_whitelist_phase = 0;
+                    
+                    if(current_mints_in_whitelist_phase_extension != option::none()) {
+                        current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
+                    };
+                    
+                    if(max_mints_in_whitelist_phase > 0) {
+                        assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
+                    };
 
-                current_mints_in_whitelist_phase = current_mints_in_whitelist_phase + 1;
+                    current_mints_in_whitelist_phase = current_mints_in_whitelist_phase + 1;
 
-                let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-                internal_set_lootbox_extension_u64(
-                    &collection_signer,
-                    collection_name_str,
-                    string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY),
-                    current_mints_in_whitelist_phase);
+                    let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+                    internal_set_lootbox_extension_u64(
+                        &collection_signer,
+                        collection_name_str,
+                        string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY),
+                        current_mints_in_whitelist_phase);
+                }
             };
             
 
