@@ -37,6 +37,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const EXTENSION_MAX_MINTS_KEY: vector<u8> = b"max_mints_per_wallet";
     const EXTENSION_STEP_DOWN_RARITY_KEY: vector<u8> = b"step_down_rarity_distribution";
     const EXTENSION_STEP_UP_RARITY_KEY: vector<u8> = b"step_up_rarity_distribution";
+    const EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY: vector<u8> = b"max_mints_in_whitelist_phase";
+    const EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY: vector<u8> = b"current_mints_in_whitelist_phase";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -95,6 +97,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const EMAX_MINTS_PER_WALLET_NOT_SET: u64 = 54;
     const EMAX_MINTS_PER_WALLET_AMOUNT_ZERO: u64 = 55;
     const EMAX_MINTS_PER_WALLET_AMOUNT_REACHED: u64 = 56;
+    const EMAX_MINTS_IN_WHITELIST_PHASE_REACHED: u64 = 57;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -786,6 +789,29 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         };
     }
 
+    public entry fun set_max_mints_in_whitelist_phase(
+        creator: &signer,
+        collection_name: vector<u8>,
+        max_mints_in_whitelist_phase: u64
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_u64(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY),
+            max_mints_in_whitelist_phase
+        );
+    }
+
     public entry fun set_extension_rarity_distributions_toggle(
         creator: &signer,
         collection_name: vector<u8>,
@@ -1226,6 +1252,37 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             assert!(table::contains(&lootbox.allow_mintList, buyer_addr), error::permission_denied(ENOT_WHITELISTED));
             let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
             assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
+
+            //Max mints during whitelist phase
+            let max_mints_in_whitelist_phase = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
+            if(max_mints_in_whitelist_phase != option::none()) {
+                let max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase);
+
+                //This is "enabled" check. If its 0, its not enabled.
+                if(max_mints_in_whitelist_phase > 0) {
+                    let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
+                    let current_mints_in_whitelist_phase = 0;
+                    
+                    if(current_mints_in_whitelist_phase_extension != option::none()) {
+                        current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
+                    };
+                    
+                    if(max_mints_in_whitelist_phase > 0) {
+                        assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
+                    };
+
+                    current_mints_in_whitelist_phase = current_mints_in_whitelist_phase + 1;
+
+                    let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+                    internal_set_lootbox_extension_u64(
+                        &collection_signer,
+                        collection_name_str,
+                        string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY),
+                        current_mints_in_whitelist_phase);
+                }
+            };
+            
+
         }else {
             assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
         };
@@ -1414,7 +1471,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         table::add(&mut pending_rewards.rewards, nonce, pending_reward);
 
         // Update whitelist amount at the end of successful purchase
-        if (lootbox.whitelistMode) {
+        if (lootbox.whitelistMode && !lootbox.is_active) {
             let remaining_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr) - 1;
             *table::borrow_mut(&mut lootbox.allow_mintList, buyer_addr) = remaining_amount;
         };
@@ -4096,6 +4153,184 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             is_max_mints_enabled,
             max_mints_globally,
             mints_remaining_for_viewer
+        )
+    }
+
+    #[view]
+    public fun get_lootbox_info_v4<CoinType>(
+        creator_addr: address,
+        collection_name: String,
+        viewer_addr_str: String
+    ): (
+        // Basic lootbox info
+        address, // creator
+        String,  // collection_name
+        String,  // description
+        String,  // collection_uri
+        // Token collection info
+
+        // Status info (from get_lootbox_status)
+        u64,    // time_till_active
+        u64,    // time_till_whitelist
+        bool,   // is_active
+        bool,   // whitelist_mode
+        // Supply and price info
+        u64,    // maxRolls (maxsupply)
+        u64,    // rolled
+        u64,    // stock
+        u64,    // max_stock
+        u64,    // price
+        bool,   // requiresKey
+        // Rarity info (from get_lootbox_rarities)
+        vector<String>, // rarity_names
+        vector<u64>,    // weights
+        vector<bool>,   // show_items
+        vector<String>, // viewReceivableRarities
+        // Extension values
+        String, // url
+        String, // rarity_colors
+        bool,    // dynamic_seed_enabled 
+        bool,    // is max mints enabled
+        u64,     // max mints globally
+        u64,     // mints remaining for viewer
+        u64,     // max mints in whitelist phase
+        u64,     // current mints in whitelist phase
+    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
+
+        // Called first as they borrow Lootbox
+        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
+        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
+
+        // Get status
+        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
+            get_lootbox_status(creator_addr, collection_name);
+        
+        // Get rarity info
+        let (rarity_names, weights, show_items) = 
+            get_lootbox_rarities(creator_addr, collection_name);
+        
+        // Get supply info
+        let rolled = get_lootbox_rolled(creator_addr, collection_name);
+        
+
+        // Get extension values
+        let url = {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"url")),
+                string::utf8(b"")
+            );
+            value
+        };
+        let rarity_colors = { 
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"rarity_colors")),
+                string::utf8(b"")
+            );
+            value
+        };
+        let dynamic_seed_enabled = {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let value = option::get_with_default(
+                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(b"dynamic_seed_enabled")),
+                false
+            );
+            value
+        };
+
+        let is_max_mints_enabled = false;
+        let max_mints_globally = 0;
+        let mints_remaining_for_viewer = 0;
+        let max_mints_in_whitelist_phase = 0;
+        let current_mints_in_whitelist_phase = 0;
+
+
+        {
+            let lootboxes = borrow_global<Lootboxes>(creator_addr);
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let val_is_max_mints_enabled = option::get_with_default(
+                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
+                false
+            );
+            is_max_mints_enabled = val_is_max_mints_enabled;
+
+            let val_max_mints_globally = option::get_with_default(
+                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
+                0
+            );
+            max_mints_globally = val_max_mints_globally;
+
+            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
+            string::append(&mut max_mints_per_current_wallet_key, viewer_addr_str);
+            let val_mints_by_viewer = option::get_with_default(
+                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, max_mints_per_current_wallet_key),
+                0
+            );
+            if(max_mints_globally >= val_mints_by_viewer) {
+                mints_remaining_for_viewer = max_mints_globally - val_mints_by_viewer;
+            } else {
+                mints_remaining_for_viewer = 0;
+            };
+
+            let max_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
+            if(max_mints_in_whitelist_phase_extension != option::none()) {
+                max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase_extension);
+            };
+
+            let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
+            if(current_mints_in_whitelist_phase_extension != option::none()) {
+                current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
+            };
+        };
+
+        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
+        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
+
+        (
+            // Basic lootbox info
+            lootbox.creator,
+            collection_name,
+            lootbox_description,
+            lootbox_uri,
+            // Token collection info
+            // Status info
+            time_till_active,
+            time_till_whitelist,
+            is_active,
+            whitelist_mode,
+            // Supply and price info
+            lootbox.maxRolls,
+            rolled,
+            lootbox.stock,
+            lootbox.maxRolls,
+            price,
+            lootbox.requiresKey,
+            // Rarity info
+            rarity_names,
+            weights,
+            show_items,
+            viewReceivableRarities,
+            // Extension values
+            url,
+            rarity_colors,
+            dynamic_seed_enabled,
+            is_max_mints_enabled,
+            max_mints_globally,
+            mints_remaining_for_viewer,
+            max_mints_in_whitelist_phase,
+            current_mints_in_whitelist_phase
         )
     }
         
