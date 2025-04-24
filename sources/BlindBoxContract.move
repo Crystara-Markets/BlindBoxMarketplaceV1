@@ -4605,5 +4605,26 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     }
 
 
+    //Token Collection Modification Accessors
+    public entry fun mutate_collection_description(
+        creator: &signer,
+        collection_name: vector<u8>,
+        description: vector<u8>
+    ) acquires Lootboxes {
+        let collection_name_str = string::utf8(collection_name);
+        let description_str = string::utf8(description);
+
+        let owner_addr = signer::address_of(creator);
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        token::mutate_collection_description(&resource_signer, collection_name_str, description_str);
+
+    }
+
 }
 
