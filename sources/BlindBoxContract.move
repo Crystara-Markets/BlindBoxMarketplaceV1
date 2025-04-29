@@ -3118,6 +3118,32 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let collection_resource_address = lootbox.collection_resource_address;
         let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
 
+        let royalty_numerator_option = get_lootbox_extension_u64(
+            &collection_resource_signer,
+            collection_name_str,
+            string::utf8(EXTENSION_ROYALTY_NUMERATOR_KEY)
+        );
+
+        let royalty_denominator_option = get_lootbox_extension_u64(
+            &collection_resource_signer,
+            collection_name_str,
+            string::utf8(EXTENSION_ROYALTY_DENOMINATOR_KEY)
+        );
+        
+        let royalty_numerator = if(royalty_numerator_option.is_some()) {
+            royalty_numerator_option.borrow()
+        } else {
+            5
+        };
+
+        let royalty_denominator = if(royalty_denominator_option.is_some()) {
+            royalty_denominator_option.borrow()
+        } else {
+            100
+        };
+        
+        
+
         let i = 0;
         while (i < len) {
             // Get values for current token
@@ -3160,8 +3186,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 max_supply,
                 string::utf8(token_uri),
                 creator_addr,
-                100,
-                5,
+                royalty_denominator,
+                royalty_numerator,
                 token_mutability_settings,
                 property_keys, 
                 property_values,
