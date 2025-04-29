@@ -801,33 +801,37 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
 
         let len = vector::length(&lootbox.tokensInLootbox);
-        let i = 0;
-        while (i < len) {
-            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
-            let token_data_id = token::create_token_data_id(
-                lootbox.collection_resource_address,
-                lootbox.collectionName,
-                token_name
-            );
-            let token_id = token::create_token_id_raw(
-                lootbox.collection_resource_address,
-                lootbox.collectionName,
-                token_name,
-                0
-            );
-            let royalty = token::create_royalty(
-                current_royalty_numerator,
-                current_royalty_denominator,
-                token::get_royalty_payee(&token::get_royalty(token_id))
-            );
-            token::mutate_tokendata_royalty(
-                &resource_signer,
-                token_data_id,
-                royalty
-            );
-            
-            i = i + 1;
+        if(len <= 200)
+        {
+            let i = 0;
+            while (i < len) {
+                let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+                let token_data_id = token::create_token_data_id(
+                    lootbox.collection_resource_address,
+                    lootbox.collectionName,
+                    token_name
+                );
+                let token_id = token::create_token_id_raw(
+                    lootbox.collection_resource_address,
+                    lootbox.collectionName,
+                    token_name,
+                    0
+                );
+                let royalty = token::create_royalty(
+                    current_royalty_numerator,
+                    current_royalty_denominator,
+                    token::get_royalty_payee(&token::get_royalty(token_id))
+                );
+                token::mutate_tokendata_royalty(
+                    &resource_signer,
+                    token_data_id,
+                    royalty
+                );
+                
+                i = i + 1;
+            };
         };
+       
     }
 
     public entry fun set_max_mints_per_wallet(
