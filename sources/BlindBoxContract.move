@@ -798,7 +798,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             lootbox_name_str,
             string::utf8(EXTENSION_ROYALTY_DENOMINATOR_KEY),
             current_royalty_denominator
-        )
+        );
 
         let len = vector::length(&lootbox.tokensInLootbox);
         let i = 0;
