@@ -39,6 +39,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EXTENSION_STEP_UP_RARITY_KEY: vector<u8> = b"step_up_rarity_distribution";
     const EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY: vector<u8> = b"max_mints_in_whitelist_phase";
     const EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY: vector<u8> = b"current_mints_in_whitelist_phase";
+    const EXTENSION_ROYALTY_NUMERATOR_KEY: vector<u8> = b"royalty_numerator";
+    const EXTENSION_ROYALTY_DENOMINATOR_KEY: vector<u8> = b"royalty_denominator";
 
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
@@ -98,6 +100,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EMAX_MINTS_PER_WALLET_AMOUNT_ZERO: u64 = 55;
     const EMAX_MINTS_PER_WALLET_AMOUNT_REACHED: u64 = 56;
     const EMAX_MINTS_IN_WHITELIST_PHASE_REACHED: u64 = 57;
+    const EINVALID_ROYALTY_DENOMINATOR: u64 = 58;
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -754,6 +757,77 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             string::utf8(rarity_colors)
         );
         
+    }
+
+    public entry fun set_royalty_percentage(
+        creator: &signer,
+        collection_name: vector<u8>,
+        royalty_numerator: u64,
+        royalty_denominator: u64
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+        assert!(royalty_denominator > 0, error::invalid_argument(EINVALID_ROYALTY_DENOMINATOR));
+
+        let current_royalty_numerator = royalty_numerator;
+        let current_royalty_denominator = royalty_denominator;
+
+        let calc_royalty_percentage = current_royalty_numerator / current_royalty_denominator;
+
+        if(calc_royalty_percentage > 10) {
+            current_royalty_numerator = 10;
+            current_royalty_denominator = 100;
+        };
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_u64(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_ROYALTY_NUMERATOR_KEY),
+            current_royalty_numerator
+        );
+
+        internal_set_lootbox_extension_u64(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(EXTENSION_ROYALTY_DENOMINATOR_KEY),
+            current_royalty_denominator
+        )
+
+        let len = vector::length(&lootbox.tokensInLootbox);
+        let i = 0;
+        while (i < len) {
+            let token_name = *vector::borrow(&lootbox.tokensInLootbox, i);
+            let token_data_id = token::create_token_data_id(
+                lootbox.collection_resource_address,
+                lootbox.collectionName,
+                token_name
+            );
+            let token_id = token::create_token_id_raw(
+                lootbox.collection_resource_address,
+                lootbox.collectionName,
+                token_name,
+                0
+            );
+            let royalty = token::create_royalty(
+                current_royalty_numerator,
+                current_royalty_denominator,
+                token::get_royalty_payee(token::get_royalty(token_id))
+            );
+            token::mutate_tokendata_royalty(
+                &resource_signer,
+                token_data_id,
+                royalty
+            );
+            
+            i = i + 1;
+        };
     }
 
     public entry fun set_max_mints_per_wallet(
