@@ -3130,14 +3130,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             string::utf8(EXTENSION_ROYALTY_DENOMINATOR_KEY)
         );
         
-        let royalty_numerator = if(royalty_numerator_option.is_some()) {
-            royalty_numerator_option.borrow()
+        let royalty_numerator = if(option::some(&royalty_numerator_option)) {
+            *option::borrow(&royalty_numerator_option)
         } else {
             5
         };
 
-        let royalty_denominator = if(royalty_denominator_option.is_some()) {
-            royalty_denominator_option.borrow()
+        let royalty_denominator = if(option::some(&royalty_denominator_option)) {
+            *option::borrow(&royalty_denominator_option)
         } else {
             100
         };
