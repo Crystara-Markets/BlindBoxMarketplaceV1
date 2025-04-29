@@ -818,7 +818,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             let royalty = token::create_royalty(
                 current_royalty_numerator,
                 current_royalty_denominator,
-                token::get_royalty_payee(token::get_royalty(token_id))
+                token::get_royalty_payee(&token::get_royalty(token_id))
             );
             token::mutate_tokendata_royalty(
                 &resource_signer,
