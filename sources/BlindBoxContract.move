@@ -3119,13 +3119,13 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
 
         let royalty_numerator_option = get_lootbox_extension_u64(
-            &collection_resource_signer,
+            collection_resource_address,
             collection_name_str,
             string::utf8(EXTENSION_ROYALTY_NUMERATOR_KEY)
         );
 
         let royalty_denominator_option = get_lootbox_extension_u64(
-            &collection_resource_signer,
+            collection_resource_address,
             collection_name_str,
             string::utf8(EXTENSION_ROYALTY_DENOMINATOR_KEY)
         );
