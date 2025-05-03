@@ -4686,6 +4686,24 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         }
     }
 
+    #[view]
+    public fun get_whitelist_amount_v2(
+        creator_addr: address,
+        collection_name: String,
+        address: address
+    ): u64 acquires Lootboxes {
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        if(table::contains(&lootbox.allow_mintList, address)) {
+            let amount = *table::borrow(&lootbox.allow_mintList, address);
+            amount
+        } else {
+            0
+        }
+    }
+
     public entry fun add_addresses_to_whitelist(
         creator: &signer,
         collection_name: String,
