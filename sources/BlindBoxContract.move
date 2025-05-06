@@ -3024,9 +3024,9 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
         
-        let time_till_active = lootbox.automatically_active_at_time
+        let time_till_active = lootbox.automatically_active_at_time;
         
-        let time_till_whitelist = lootbox.automatically_whitelist_mode_at_time
+        let time_till_whitelist = lootbox.automatically_whitelist_mode_at_time;
 
         (time_till_active, time_till_whitelist, lootbox.is_active, lootbox.whitelistMode)
     }
