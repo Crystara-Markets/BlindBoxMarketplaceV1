@@ -3024,18 +3024,9 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
         
-        let current_time = timestamp::now_microseconds();
-        let time_till_active = if (lootbox.automatically_active_at_time > current_time) {
-            lootbox.automatically_active_at_time 
-        } else {
-            0
-        };
+        let time_till_active = lootbox.automatically_active_at_time
         
-        let time_till_whitelist = if (lootbox.automatically_whitelist_mode_at_time > current_time) {
-            lootbox.automatically_whitelist_mode_at_time
-        } else {
-            0
-        };
+        let time_till_whitelist = lootbox.automatically_whitelist_mode_at_time
 
         (time_till_active, time_till_whitelist, lootbox.is_active, lootbox.whitelistMode)
     }
