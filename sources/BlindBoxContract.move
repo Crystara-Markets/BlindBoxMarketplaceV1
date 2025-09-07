@@ -1242,10 +1242,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
       collection_name: vector<u8>,
       quantity: u64
     ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
-
-        assert!(signer::address_of(buyer) == @projectOwnerAdr, error::invalid_argument(ENO_PERMISSION));
         
-        let overflow = 200;
+        let overflow = 100;
         let iter = 0;
 
         let price_per_box = get_lootbox_price<CoinType>(creator_addr, string::utf8(collection_name));
@@ -2043,6 +2041,21 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         true
     }
 
+    fun get_unbiased_random(random_num: u256, range: u256): u256 {
+        // Calculate the largest multiple of range that fits in u256
+        let max_u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935u256; // 2^256 - 1
+        let valid_range = (max_u256 / range) * range;
+        
+        // If random_num is in the biased zone, use a fallback method
+        if (random_num >= valid_range) {
+            // Use a different part of the random number
+            let shifted = random_num >> 128; // Use upper 128 bits
+            shifted % range
+        } else {
+            random_num % range
+        }
+    }
+
     // Select rarity, token, and index in one function
     fun select_rarity_and_token_distribution_upgraded(
         lootbox: &Lootbox,
@@ -2086,9 +2099,13 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             
             i = i + 1;
         };
+
+        if (total_weight == 0) {
+            return (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), 0)
+        };
         
         // Use random number to select initial rarity
-        let roll = random_num % total_weight;
+        let roll = get_unbiased_random(random_num, total_weight);
         let current_weight = (0 as u256);
         
         // Find initially selected rarity
