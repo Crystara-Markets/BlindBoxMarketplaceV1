@@ -1242,10 +1242,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       collection_name: vector<u8>,
       quantity: u64
     ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
-
-        assert!(signer::address_of(buyer) == @projectOwnerAdr, error::invalid_argument(ENO_PERMISSION));
         
-        let overflow = 200;
+        let overflow = 11;
         let iter = 0;
 
         let price_per_box = get_lootbox_price<CoinType>(creator_addr, string::utf8(collection_name));
