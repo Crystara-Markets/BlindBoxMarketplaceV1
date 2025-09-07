@@ -1243,7 +1243,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       quantity: u64
     ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
         
-        let overflow = 11;
+        let overflow = 100;
         let iter = 0;
 
         let price_per_box = get_lootbox_price<CoinType>(creator_addr, string::utf8(collection_name));
