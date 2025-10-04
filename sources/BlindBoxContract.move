@@ -363,6 +363,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       signer_address: address
     }
 
+    struct PermissionTypesAvailable has key {
+        permission_types_available: vector<String>,
+    }
+
     //Reward Structs
     struct PendingReward has store,drop {
       buyer: address,
@@ -899,7 +903,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         permission_name: vector<u8>): vector<u8> {
         let key = vector::empty<u8>();
         vector::append(&mut key, string_utils::to_string_with_canonical_addresses(&external_address));
-        vector::append(&mut key, b":");
+        vector::append(&mut key, b";");
         vector::append(&mut key, &permission_name);
         key
     }
