@@ -867,6 +867,43 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
     }
 
+    public entry fun set_external_address_permission(
+        creator: &signer,
+        collection_name: vector<u8>,
+        external_address: address,
+        permission_name: vector<u8>,
+        permission_toggle: bool
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        let key = formulate_external_address_permission_key(external_address, permission_name);
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(key),
+            permission_toggle
+        );
+    }
+
+    fun formulate_external_address_permission_key( 
+        external_address: address,
+        permission_name: vector<u8>): vector<u8> {
+        let key = vector::empty<u8>();
+        vector::append(&mut key, string_utils::to_string_with_canonical_addresses(&external_address));
+        vector::append(&mut key, b":");
+        vector::append(&mut key, &permission_name);
+        key
+    }
+
     public entry fun set_max_mints_in_whitelist_phase(
         creator: &signer,
         collection_name: vector<u8>,
@@ -3378,7 +3415,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
     }
 
-    //Not in use yet.
     public entry fun create_lootbox_with_rarities_and_extension<CoinType>(
         source_account: &signer,
         collection_name: vector<u8>,
@@ -3454,62 +3490,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         //Unused params reduce warnings in a no-op way
         let _ = fresh_account;
     }
-
-
-    /* Possibly never add this, just make the lootbox have the same stock as max supply always. Then just let them use whitelisting to control the stock.
-    #[event]
-    struct LootboxStockUpdatedEvent has drop, store {
-        creator: address,
-        collection_name: String,
-        added_amount: u64,
-        new_total_stock: u64,
-        timestamp: u64
-    }
-
-    public entry fun add_stock_to_lootbox(
-        creator: &signer,
-        collection_name: vector<u8>,
-        add_amount: u64
-    ) acquires Lootboxes {
-        let creator_addr = signer::address_of(creator);
-        let collection_name_str = string::utf8(collection_name);
-
-        // Check if Lootboxes exists for creator
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-
-        // Get the lootbox
-        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-        assert!(
-            table::contains(&lootboxes.lootbox_table, collection_name_str),
-            error::not_found(ELOOTBOX_NOTEXISTS)
-        );
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-        
-        // Verify the signer is the creator
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
-        // Check if adding stock would exceed maxRolls
-        assert!(
-            lootbox.rolled + add_amount <= lootbox.maxRolls,
-            error::invalid_argument(EMAX_ROLLS_REACHED)
-        );
-
-        // Add stock
-        lootbox.stock = lootbox.stock + add_amount;
-
-        // Emit event for stock update
-        event::emit(
-            LootboxStockUpdatedEvent {
-                creator: creator_addr,
-                collection_name: collection_name_str,
-                added_amount: add_amount,
-                new_total_stock: lootbox.stock,
-                timestamp: timestamp::now_microseconds()
-            }
-        );
-    }
-
-    */
 
 
 
