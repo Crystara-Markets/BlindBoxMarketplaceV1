@@ -4996,7 +4996,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       collection_name: String,
       token_name: String,
       new_uri: String
-    ) acquires Lootboxes, LootboxExtensions {
+    ) acquires Lootboxes {
         /*
         // Critical Permission Check START
         */
