@@ -5001,7 +5001,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Critical Permission Check START
         */
         let external_mutator_addr = signer::address_of(external_mutator);
-        asset_has_permission_external_mutation(external_mutator_addr, creator, collection_name, b"external_mutate_token_uri");
+        asset_has_permission_external_mutation(external_mutator_addr, creator, collection_name, b"external_edit_token_metadata");
         // Critical Permission Check END
 
         let lootboxes = borrow_global<Lootboxes>(creator);
