@@ -4972,6 +4972,57 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     // External Contract Integrations
     */
 
+    fun asset_has_permission_external_mutation(
+        external_mutator_addr: address,
+        creator: address,
+        collection_name: String,
+        permission_name: vector<u8> 
+    ) acquires Lootboxes, LootboxExtensions {
+        if (exists<Lootboxes>(creator)) {
+            let lootboxes = borrow_global<Lootboxes>(creator);
+            assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let permission_key =  string::utf8(formulate_external_address_permission_key(external_mutator_addr, permission_name));
+            let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, permission_key);
+
+            assert!(permission_toggle == option::some(true), error::permission_denied(ENOT_AUTHORIZED));
+        }
+    }
+
+    public entry fun external_mutate_token_uri( 
+      external_mutator: &signer,
+      creator: address,
+      collection_name: String,
+      token_name: String,
+      new_uri: String
+    ) acquires Lootboxes, LootboxExtensions {
+        /*
+        // Critical Permission Check START
+        */
+        let external_mutator_addr = signer::address_of(external_mutator);
+        asset_has_permission_external_mutation(external_mutator_addr, creator, collection_name, b"external_mutate_token_uri");
+        // Critical Permission Check END
+
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        let token_data_id = token::create_token_data_id(
+            lootbox.collection_resource_address,
+            collection_name,
+            token_name
+        );
+
+        token::mutate_tokendata_uri(
+            &collection_resource_signer,
+            token_data_id,
+            new_uri
+        );
+    }
+
     public entry fun external_mutate_token_metadata(
       external_mutator: &signer,
       creator: address,
@@ -4985,6 +5036,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       property_types: vector<String>,
       property_values: vector<vector<u8>>
     ) acquires Lootboxes, LootboxExtensions {
+        assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
         let external_mutator_addr = signer::address_of(external_mutator);
 
         let lootboxes = borrow_global_mut<Lootboxes>(creator);
