@@ -42,6 +42,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const EXTENSION_ROYALTY_NUMERATOR_KEY: vector<u8> = b"royalty_numerator";
     const EXTENSION_ROYALTY_DENOMINATOR_KEY: vector<u8> = b"royalty_denominator";
 
+    const EXTENSION_EXTERNAL_EDIT_TOKEN_METADATA_PERMISSION_NAME: vector<u8> = b"external_edit_token_metadata";
+    const EXTENSION_EXTERNAL_EDIT_COLLECTION_METADATA_PERMISSION_NAME: vector<u8> = b"external_edit_collection_metadata";
+    const EXTENSION_EXTERNAL_EDIT_LOOTBOX_DETAILS_PERMISSION_NAME: vector<u8> = b"external_edit_lootbox_details";
+
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
     const ECOLLECTION_EXISTS: u64 = 2;
@@ -5001,7 +5005,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         // Critical Permission Check START
         */
         let external_mutator_addr = signer::address_of(external_mutator);
-        asset_has_permission_external_mutation(external_mutator_addr, creator, collection_name, b"external_edit_token_metadata");
+        asset_has_permission_external_mutation(external_mutator_addr, creator, collection_name, EXTENSION_EXTERNAL_EDIT_TOKEN_METADATA_PERMISSION_NAME);
         // Critical Permission Check END
 
         let lootboxes = borrow_global<Lootboxes>(creator);
@@ -5038,12 +5042,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     ) acquires Lootboxes, LootboxExtensions {
         let external_mutator_addr = signer::address_of(external_mutator);
 
-        let lootboxes = borrow_global_mut<Lootboxes>(creator);
+        let lootboxes = borrow_global<Lootboxes>(creator);
         assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
 
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
 
-        let permission_key =  string::utf8(formulate_external_address_permission_key(external_mutator_addr, b"external_mutate_token_metadata"));
+        let permission_key =  string::utf8(formulate_external_address_permission_key(external_mutator_addr, EXTENSION_EXTERNAL_EDIT_TOKEN_METADATA_PERMISSION_NAME));
         let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, permission_key);
 
         assert!(permission_toggle == option::some(true), error::permission_denied(ENOT_AUTHORIZED));
