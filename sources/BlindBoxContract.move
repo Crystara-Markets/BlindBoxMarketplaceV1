@@ -4968,5 +4968,77 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
     }
 
+    /*
+    // External Contract Integrations
+    */
+
+    public entry fun external_mutate_token_metadata(
+      external_mutator: &signer,
+      creator: address,
+      collection_name: String,
+
+      token_name: String,
+      new_uri: String,
+      new_description: String,
+
+      property_keys: vector<String>,
+      property_types: vector<String>,
+      property_values: vector<vector<u8>>
+    ) acquires Lootboxes {
+        let external_mutator_addr = signer::address_of(external_mutator);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(creator);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
+
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name);
+
+        let permission_key = formulate_external_address_permission_key(external_mutator_addr, string::utf8(b"external_mutate_token_metadata"));
+        let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, permission_key);
+
+        assert!(permission_toggle == option::some(true), error::permission_denied(ENOT_AUTHORIZED));
+
+        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+
+        let collection_resource_address = lootbox.collection_resource_address;
+        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        // Get token data id
+        let token_data_id = token::create_token_data_id(
+            collection_resource_address,
+            collection_name,
+            token_name
+        );
+
+        // Modify URI if provided
+        if (vector::length(&new_uri) > 0) {
+            token::mutate_tokendata_uri(
+                &collection_resource_signer,
+                token_data_id,
+                string::utf8(new_uri)
+            );
+        };
+
+        // Modify description if provided
+        if (vector::length(&new_description) > 0) {
+            token::mutate_tokendata_description(
+                &collection_resource_signer,
+                token_data_id,
+                string::utf8(new_description)
+            );
+        };
+
+        // Modify other properties if provided
+        if (vector::length(&property_keys) > 0) {
+            token::mutate_tokendata_property(
+                &collection_resource_signer,
+                token_data_id,
+                property_keys,
+                property_values,
+                property_types,
+            );
+        };
+    }
+
 }
 
