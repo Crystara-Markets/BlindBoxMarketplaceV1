@@ -4996,7 +4996,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       collection_name: String,
       token_name: String,
       new_uri: String
-    ) acquires Lootboxes {
+    ) acquires Lootboxes, LootboxExtensions {
         /*
         // Critical Permission Check START
         */
@@ -5036,7 +5036,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       property_types: vector<String>,
       property_values: vector<vector<u8>>
     ) acquires Lootboxes, LootboxExtensions {
-        assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
         let external_mutator_addr = signer::address_of(external_mutator);
 
         let lootboxes = borrow_global_mut<Lootboxes>(creator);
@@ -5090,6 +5089,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 property_types,
             );
         };
+
+        assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
     }
 
 }
