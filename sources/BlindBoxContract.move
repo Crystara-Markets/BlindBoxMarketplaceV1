@@ -5015,7 +5015,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             token::mutate_tokendata_uri(
                 &collection_resource_signer,
                 token_data_id,
-                string::utf8(new_uri)
+                new_uri
             );
         };
 
@@ -5024,7 +5024,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             token::mutate_tokendata_description(
                 &collection_resource_signer,
                 token_data_id,
-                string::utf8(new_description)
+                new_description
             );
         };
 
