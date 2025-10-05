@@ -4984,7 +4984,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       property_keys: vector<String>,
       property_types: vector<String>,
       property_values: vector<vector<u8>>
-    ) acquires Lootboxes {
+    ) acquires Lootboxes, LootboxExtensions {
         let external_mutator_addr = signer::address_of(external_mutator);
 
         let lootboxes = borrow_global_mut<Lootboxes>(creator);
