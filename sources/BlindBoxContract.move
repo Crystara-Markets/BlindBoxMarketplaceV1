@@ -4992,8 +4992,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name);
 
-        let permission_key = formulate_external_address_permission_key(external_mutator_addr, string::utf8(b"external_mutate_token_metadata"));
-        let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, permission_key);
+        let permission_key =  string::utf8(formulate_external_address_permission_key(external_mutator_addr, b"external_mutate_token_metadata"));
+        let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, permission_key);
 
         assert!(permission_toggle == option::some(true), error::permission_denied(ENOT_AUTHORIZED));
 
@@ -5011,7 +5011,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
 
         // Modify URI if provided
-        if (vector::length(&new_uri) > 0) {
+        if (string::length(&new_uri) > 0) {
             token::mutate_tokendata_uri(
                 &collection_resource_signer,
                 token_data_id,
@@ -5020,7 +5020,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
 
         // Modify description if provided
-        if (vector::length(&new_description) > 0) {
+        if (string::length(&new_description) > 0) {
             token::mutate_tokendata_description(
                 &collection_resource_signer,
                 token_data_id,
