@@ -42,6 +42,10 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const EXTENSION_ROYALTY_NUMERATOR_KEY: vector<u8> = b"royalty_numerator";
     const EXTENSION_ROYALTY_DENOMINATOR_KEY: vector<u8> = b"royalty_denominator";
 
+    const EXTENSION_EXTERNAL_EDIT_TOKEN_METADATA_PERMISSION_NAME: vector<u8> = b"external_edit_token_metadata";
+    const EXTENSION_EXTERNAL_EDIT_COLLECTION_METADATA_PERMISSION_NAME: vector<u8> = b"external_edit_collection_metadata";
+    const EXTENSION_EXTERNAL_EDIT_LOOTBOX_DETAILS_PERMISSION_NAME: vector<u8> = b"external_edit_lootbox_details";
+
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
     const ECOLLECTION_EXISTS: u64 = 2;
@@ -361,6 +365,10 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     struct ResourceInfo has key {
       signer_cap: account::SignerCapability,
       signer_address: address
+    }
+
+    struct PermissionTypesAvailable has key {
+        permission_types_available: vector<String>,
     }
 
     //Reward Structs
@@ -865,6 +873,43 @@ module projectOwnerAdr::crystara_blindbox_v1 {
                 max_mints_per_wallet_amount
             );
         };
+    }
+
+    public entry fun set_external_address_permission(
+        creator: &signer,
+        collection_name: vector<u8>,
+        external_address: address,
+        permission_name: vector<u8>,
+        permission_toggle: bool
+    ) acquires Lootboxes, LootboxExtensions {
+        let owner_addr = signer::address_of(creator);
+        let lootbox_name_str = string::utf8(collection_name);
+
+        let lootboxes = borrow_global_mut<Lootboxes>(owner_addr);
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, lootbox_name_str);
+
+        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        let key = formulate_external_address_permission_key(external_address, permission_name);
+
+        internal_set_lootbox_extension_bool(
+            &resource_signer,
+            lootbox_name_str,
+            string::utf8(key),
+            permission_toggle
+        );
+    }
+
+    fun formulate_external_address_permission_key( 
+        external_address: address,
+        permission_name: vector<u8>): vector<u8> {
+        let key = vector::empty<u8>();
+        vector::append(&mut key, *string::bytes(&string_utils::to_string_with_canonical_addresses(&external_address)));
+        vector::append(&mut key, b";");
+        vector::append(&mut key, permission_name);
+        key
     }
 
     public entry fun set_max_mints_in_whitelist_phase(
@@ -3378,7 +3423,6 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         );
     }
 
-    //Not in use yet.
     public entry fun create_lootbox_with_rarities_and_extension<CoinType>(
         source_account: &signer,
         collection_name: vector<u8>,
@@ -3454,62 +3498,6 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         //Unused params reduce warnings in a no-op way
         let _ = fresh_account;
     }
-
-
-    /* Possibly never add this, just make the lootbox have the same stock as max supply always. Then just let them use whitelisting to control the stock.
-    #[event]
-    struct LootboxStockUpdatedEvent has drop, store {
-        creator: address,
-        collection_name: String,
-        added_amount: u64,
-        new_total_stock: u64,
-        timestamp: u64
-    }
-
-    public entry fun add_stock_to_lootbox(
-        creator: &signer,
-        collection_name: vector<u8>,
-        add_amount: u64
-    ) acquires Lootboxes {
-        let creator_addr = signer::address_of(creator);
-        let collection_name_str = string::utf8(collection_name);
-
-        // Check if Lootboxes exists for creator
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-
-        // Get the lootbox
-        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-        assert!(
-            table::contains(&lootboxes.lootbox_table, collection_name_str),
-            error::not_found(ELOOTBOX_NOTEXISTS)
-        );
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-        
-        // Verify the signer is the creator
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
-        // Check if adding stock would exceed maxRolls
-        assert!(
-            lootbox.rolled + add_amount <= lootbox.maxRolls,
-            error::invalid_argument(EMAX_ROLLS_REACHED)
-        );
-
-        // Add stock
-        lootbox.stock = lootbox.stock + add_amount;
-
-        // Emit event for stock update
-        event::emit(
-            LootboxStockUpdatedEvent {
-                creator: creator_addr,
-                collection_name: collection_name_str,
-                added_amount: add_amount,
-                new_total_stock: lootbox.stock,
-                timestamp: timestamp::now_microseconds()
-            }
-        );
-    }
-
-    */
 
 
 
@@ -4982,6 +4970,131 @@ module projectOwnerAdr::crystara_blindbox_v1 {
 
         token::mutate_collection_description(&resource_signer, collection_name_str, description_str);
 
+    }
+
+    /*
+    // External Contract Integrations
+    */
+
+    fun asset_has_permission_external_mutation(
+        external_mutator_addr: address,
+        creator: address,
+        collection_name: String,
+        permission_name: vector<u8> 
+    ) acquires Lootboxes, LootboxExtensions {
+        if (exists<Lootboxes>(creator)) {
+            let lootboxes = borrow_global<Lootboxes>(creator);
+            assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
+            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+            let permission_key =  string::utf8(formulate_external_address_permission_key(external_mutator_addr, permission_name));
+            let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, permission_key);
+
+            assert!(permission_toggle == option::some(true), error::permission_denied(ENOT_AUTHORIZED));
+        }
+    }
+
+    public entry fun external_mutate_token_uri( 
+      external_mutator: &signer,
+      creator: address,
+      collection_name: String,
+      token_name: String,
+      new_uri: String
+    ) acquires Lootboxes, LootboxExtensions {
+        /*
+        // Critical Permission Check START
+        */
+        let external_mutator_addr = signer::address_of(external_mutator);
+        asset_has_permission_external_mutation(external_mutator_addr, creator, collection_name, EXTENSION_EXTERNAL_EDIT_TOKEN_METADATA_PERMISSION_NAME);
+        // Critical Permission Check END
+
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        let token_data_id = token::create_token_data_id(
+            lootbox.collection_resource_address,
+            collection_name,
+            token_name
+        );
+
+        token::mutate_tokendata_uri(
+            &collection_resource_signer,
+            token_data_id,
+            new_uri
+        );
+    }
+
+    public entry fun external_mutate_token_metadata(
+      external_mutator: &signer,
+      creator: address,
+      collection_name: String,
+
+      token_name: String,
+      new_uri: String,
+      new_description: String,
+
+      property_keys: vector<String>,
+      property_types: vector<String>,
+      property_values: vector<vector<u8>>
+    ) acquires Lootboxes, LootboxExtensions {
+        let external_mutator_addr = signer::address_of(external_mutator);
+
+        let lootboxes = borrow_global<Lootboxes>(creator);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name), error::not_found(ELOOTBOX_NOTEXISTS));
+
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+
+        let permission_key =  string::utf8(formulate_external_address_permission_key(external_mutator_addr, EXTENSION_EXTERNAL_EDIT_TOKEN_METADATA_PERMISSION_NAME));
+        let permission_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, permission_key);
+
+        assert!(permission_toggle == option::some(true), error::permission_denied(ENOT_AUTHORIZED));
+
+        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+
+        let collection_resource_address = lootbox.collection_resource_address;
+        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        // Get token data id
+        let token_data_id = token::create_token_data_id(
+            collection_resource_address,
+            collection_name,
+            token_name
+        );
+
+        // Modify URI if provided
+        if (string::length(&new_uri) > 0) {
+            token::mutate_tokendata_uri(
+                &collection_resource_signer,
+                token_data_id,
+                new_uri
+            );
+        };
+
+        // Modify description if provided
+        if (string::length(&new_description) > 0) {
+            token::mutate_tokendata_description(
+                &collection_resource_signer,
+                token_data_id,
+                new_description
+            );
+        };
+
+        // Modify other properties if provided
+        if (vector::length(&property_keys) > 0) {
+            token::mutate_tokendata_property(
+                &collection_resource_signer,
+                token_data_id,
+                property_keys,
+                property_values,
+                property_types,
+            );
+        };
+
+        assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
     }
 
 }
