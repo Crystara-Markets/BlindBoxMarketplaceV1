@@ -46,6 +46,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const EXTENSION_EXTERNAL_EDIT_COLLECTION_METADATA_PERMISSION_NAME: vector<u8> = b"external_edit_collection_metadata";
     const EXTENSION_EXTERNAL_EDIT_LOOTBOX_DETAILS_PERMISSION_NAME: vector<u8> = b"external_edit_lootbox_details";
 
+    const EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY: vector<u8> = b"blindbox_minting_toggle";
+
     /// Error Codes
     const ENOT_AUTHORIZED: u64 = 1;
     const ECOLLECTION_EXISTS: u64 = 2;
@@ -105,6 +107,15 @@ module projectOwnerAdr::crystara_blindbox_v1 {
     const EMAX_MINTS_PER_WALLET_AMOUNT_REACHED: u64 = 56;
     const EMAX_MINTS_IN_WHITELIST_PHASE_REACHED: u64 = 57;
     const EINVALID_ROYALTY_DENOMINATOR: u64 = 58;
+    const EBLINDBOX_MINTING_DISABLED: u64 = 59;
+    const EDIRECT_PURCHASE_DISABLED: u64 = 60;
+    const EDIRECT_PURCHASE_NO_PRICE_FOR_RARITY: u64 = 61;
+    const ETOKEN_NOT_IN_LOOTBOX: u64 = 62;
+    const ETOKEN_NOT_AVAILABLE: u64 = 63;
+    const ETOKEN_SOLD_OUT: u64 = 64;
+
+    // Constants for direct purchase extension keys
+    const EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX: vector<u8> = b"fixedprice-";
 
     #[event]
     struct LootboxCreatedEvent has copy, drop, store {
@@ -184,6 +195,27 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         collection_name: String,
         price: u64,
         price_coinType: String,
+        timestamp: u64
+    }
+
+    #[event]
+    struct DirectPurchaseEvent has drop, store {
+        buyer: address,
+        creator: address,
+        collection_name: String,
+        token_name: String,
+        rarity: String,
+        price: u64,
+        price_coinType: String,
+        timestamp: u64
+    }
+
+    #[event]
+    struct RarityDirectPriceSetEvent has drop, store {
+        creator: address,
+        collection_name: String,
+        rarity: String,
+        price: u64,
         timestamp: u64
     }
 
@@ -839,7 +871,6 @@ module projectOwnerAdr::crystara_blindbox_v1 {
                 i = i + 1;
             };
         };
-       
     }
 
     public entry fun set_max_mints_per_wallet(
@@ -901,6 +932,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             permission_toggle
         );
     }
+
+
 
     fun formulate_external_address_permission_key( 
         external_address: address,
@@ -1303,6 +1336,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         };
     }
 
+
+
     /// Purchase a lootbox
     public entry fun purchase_lootbox<CoinType>(
         buyer: &signer,
@@ -1333,6 +1368,9 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
 
         assert!(vector::length(&lootbox.tokensInLootbox) > 0, error::invalid_state(ELOOTBOX_EMPTY));
+
+        let blindbox_minting_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY));
+        assert!(blindbox_minting_toggle == option::some(true), error::invalid_state(EBLINDBOX_MINTING_DISABLED));
 
         // Check auto-activation time
         let current_time = timestamp::now_microseconds();
@@ -1608,6 +1646,309 @@ module projectOwnerAdr::crystara_blindbox_v1 {
                 timestamp: timestamp::now_microseconds(),
                 price: price,
                 price_coinType: type_info::type_name<CoinType>(),
+            }
+        );
+    }
+
+    /// Direct purchase of a specific token from a collection (non-blindbox mode)
+    /// This function is only available when blindbox_minting_toggle is false
+    /// The price is determined by the token's rarity using the "fixedprice-{rarity}" extension
+    public entry fun purchase_direct<CoinType>(
+        buyer: &signer,
+        creator_addr: address,
+        collection_name: vector<u8>,
+        token_name: vector<u8>,
+    ) acquires Lootboxes, LootboxExtensions, LootboxDistributionHandlers, UserClaimResourceInfoV2 {
+        // Check if coin type is SupraCoin
+        if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
+            assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+        };
+
+        let buyer_addr = signer::address_of(buyer);
+        let collection_name_str = string::utf8(collection_name);
+        let token_name_str = string::utf8(token_name);
+
+        // Check if user has initialized their claim escrow account
+        let user_claim_resource_address = account::create_resource_address(&buyer_addr, USER_CLAIM_RESOURCE_SEED);        
+        if(!account::exists_at(user_claim_resource_address)){
+            initialize_claim_account(buyer);
+        };
+
+        // Fetch the lootbox
+        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
+
+        assert!(vector::length(&lootbox.tokensInLootbox) > 0, error::invalid_state(ELOOTBOX_EMPTY));
+
+        // Check that blindbox minting is DISABLED (meaning direct purchase is enabled)
+        let blindbox_minting_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY));
+        assert!(blindbox_minting_toggle == option::some(false), error::invalid_state(EDIRECT_PURCHASE_DISABLED));
+
+        // Check auto-activation time
+        let current_time = timestamp::now_microseconds();
+        if (lootbox.automatically_active_at_time != 0 && current_time >= lootbox.automatically_active_at_time) {
+            lootbox.is_active = true;
+            event::emit(
+                LootboxStatusUpdatedEvent {
+                    creator: creator_addr,
+                    collection_name: collection_name_str,
+                    is_active: lootbox.is_active,
+                    is_whitelist_mode: lootbox.whitelistMode,
+                    auto_trigger_whitelist_time: lootbox.automatically_whitelist_mode_at_time,
+                    auto_trigger_active_time: lootbox.automatically_active_at_time,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
+        };
+
+        // Check auto-whitelist time
+        if (lootbox.automatically_whitelist_mode_at_time != 0 && current_time >= lootbox.automatically_whitelist_mode_at_time) {
+            lootbox.whitelistMode = true;
+            event::emit(
+                LootboxStatusUpdatedEvent {
+                    creator: creator_addr,
+                    collection_name: collection_name_str,
+                    is_active: lootbox.is_active,
+                    is_whitelist_mode: lootbox.whitelistMode,
+                    auto_trigger_whitelist_time: lootbox.automatically_whitelist_mode_at_time,
+                    auto_trigger_active_time: lootbox.automatically_active_at_time,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
+        };
+
+        // Check whitelist if enabled
+        if (lootbox.whitelistMode && !lootbox.is_active) {
+            assert!(table::contains(&lootbox.allow_mintList, buyer_addr), error::permission_denied(ENOT_WHITELISTED));
+            let allowed_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr);
+            assert!(allowed_amount >= 1, error::invalid_state(EINSUFFICIENT_WHITELIST_AMOUNT));
+
+            // Max mints during whitelist phase
+            let max_mints_in_whitelist_phase = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
+            if(max_mints_in_whitelist_phase != option::none()) {
+                let max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase);
+
+                if(max_mints_in_whitelist_phase > 0) {
+                    let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
+                    let current_mints_in_whitelist_phase = 0;
+                    
+                    if(current_mints_in_whitelist_phase_extension != option::none()) {
+                        current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
+                    };
+                    
+                    if(max_mints_in_whitelist_phase > 0) {
+                        assert!(current_mints_in_whitelist_phase < max_mints_in_whitelist_phase, error::invalid_state(EMAX_MINTS_IN_WHITELIST_PHASE_REACHED));
+                    };
+
+                    current_mints_in_whitelist_phase = current_mints_in_whitelist_phase + 1;
+
+                    let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+                    internal_set_lootbox_extension_u64(
+                        &collection_signer,
+                        collection_name_str,
+                        string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY),
+                        current_mints_in_whitelist_phase);
+                }
+            };
+        } else {
+            assert!(lootbox.is_active, error::invalid_state(ELOOTBOX_NOT_ACTIVE));
+        };
+
+        // Check if there is stock and rolls are not maxed out
+        assert!(lootbox.stock > 0, error::not_found(ENOT_ENOUGH_STOCK));
+        assert!(lootbox.rolled < lootbox.maxRolls, error::not_found(EMAX_ROLLS_REACHED));
+
+        // Max Mint per wallet check
+        let max_mints_per_wallet_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_KEY));
+        if(max_mints_per_wallet_toggle == option::some(true)) {
+            let max_mints_per_wallet_amount = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_MAX_MINTS_KEY));
+            if(max_mints_per_wallet_amount == option::none()) {
+                assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_NOT_SET));
+            };
+
+            let max_mints_per_wallet_amount = *option::borrow(&max_mints_per_wallet_amount);
+
+            if(max_mints_per_wallet_amount == 0) {
+                assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_AMOUNT_ZERO));
+            };
+
+            let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
+            string::append(&mut max_mints_per_current_wallet_key, string_utils::to_string_with_canonical_addresses(&buyer_addr));
+
+            let current_wallet_mint_count = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, max_mints_per_current_wallet_key);
+            if(current_wallet_mint_count == option::none()) {
+                internal_set_lootbox_extension_u64(&collection_signer, collection_name_str, max_mints_per_current_wallet_key, 1);
+            } else {
+                let current_wallet_mint_count = *option::borrow(&current_wallet_mint_count);
+                if(current_wallet_mint_count >= max_mints_per_wallet_amount) {
+                    assert!(false, error::invalid_state(EMAX_MINTS_PER_WALLET_AMOUNT_REACHED));
+                };
+                internal_set_lootbox_extension_u64(&collection_signer, collection_name_str, max_mints_per_current_wallet_key, current_wallet_mint_count + 1);
+            }
+        };
+
+        // Verify the token exists in the lootbox
+        assert!(table::contains(&lootbox.token_rarity_mapping, token_name_str), error::not_found(ETOKEN_NOT_IN_LOOTBOX));
+
+        // Get the token's rarity from the lootbox mapping
+        let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name_str);
+
+        // Check if distribution is upgraded and verify token is available
+        if(is_distribution_upgraded(lootbox)) {
+            let handlers = borrow_global<LootboxDistributionHandlers>(creator_addr);
+            let handler = table::borrow(&handlers.distribution_handlers, collection_name_str);
+            
+            // Check if the rarity exists in the handler
+            assert!(table::contains(&handler.avail_tokens_in_rarity, token_rarity), error::not_found(ETOKEN_NOT_AVAILABLE));
+            
+            // Check if the specific token is available in the rarity's available tokens
+            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, token_rarity);
+            let (token_found, _) = find_token_index_in_avail_tokens(avail_tokens, token_name_str);
+            assert!(token_found, error::not_found(ETOKEN_NOT_AVAILABLE));
+        } else {
+            // For non-upgraded distribution, check token supply
+            let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name_str);
+            if (max_supply != 0) {
+                assert!(cur_supply < max_supply, error::invalid_state(ETOKEN_SOLD_OUT));
+            };
+        };
+
+        // Get the price for this rarity
+        let price_key = string::utf8(EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX);
+        string::append(&mut price_key, token_rarity);
+        
+        let price_option = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name_str, price_key);
+        assert!(price_option != option::none(), error::not_found(EDIRECT_PURCHASE_NO_PRICE_FOR_RARITY));
+        let price = *option::borrow(&price_option);
+
+        // Check buyer's balance
+        let buyer_balance = coin::balance<CoinType>(buyer_addr);
+        assert!(buyer_balance >= price, error::invalid_argument(EINSUFFICIENT_BALANCE));
+
+        // Distribute payment (same as purchase_lootbox)
+        let marketplace_cut = price / 10; // 10%
+        let creator_cut = price - marketplace_cut; // 90%
+
+        // Deduct payment from the buyer
+        let marketplace_cut_coins = coin::withdraw<CoinType>(buyer, marketplace_cut);
+        let creator_cut_coins = coin::withdraw<CoinType>(buyer, creator_cut);
+
+        // Deposit the coins to the creator and marketplace
+        supra_account::deposit_coins(lootbox.creator, creator_cut_coins);
+        supra_account::deposit_coins(@projectOwnerAdr, marketplace_cut_coins);
+
+        // Update lootbox state
+        lootbox.stock = lootbox.stock - 1;
+        lootbox.rolled = lootbox.rolled + 1;
+
+        // Auto Opt In To Direct Transfer for Testnet Purposes
+        token::opt_in_direct_transfer(buyer, true);
+
+        // Get collection signer
+        let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        // Create token data id
+        let token_data_id = token::create_token_data_id(
+            lootbox.collection_resource_address,
+            collection_name_str,
+            token_name_str
+        );
+
+        let user_claim_seed = USER_CLAIM_RESOURCE_SEED;
+        let user_claim_resource_address = account::create_resource_address(&buyer_addr, user_claim_seed);
+        assert!(account::exists_at(user_claim_resource_address), error::not_found(ERESOURCE_ESCROW_CLAIM_ACCOUNT_NOT_EXISTS)); 
+        let claim_info = borrow_global_mut<UserClaimResourceInfoV2>(user_claim_resource_address);
+        let user_claim_escrow_signer = account::create_signer_with_capability(&claim_info.resource_signer_cap);
+
+        // Mint token
+        let token_minted_id = token::mint_token(
+            &collection_signer,
+            token_data_id,
+            1  // amount
+        );
+
+        // Update distribution handler if upgraded
+        if(is_distribution_upgraded(lootbox)) {
+            let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
+            let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
+            update_distribution_handler_post_mint_by_token_name(handler, token_rarity, token_name_str, lootbox);
+        };
+
+        // Handle dynamic seed (same as receive_dvrf)
+        let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(b"dynamic_seed_enabled"));
+        if (dynamic_seed == option::some(true)) {
+            // Use timestamp as a pseudo-random seed for direct purchases
+            let seed_value = (timestamp::now_microseconds() as u256);
+            let property_keys = vector[
+                string::utf8(b"rarity"),
+                string::utf8(b"seed"),
+            ];
+            let property_values = vector[
+                bcs::to_bytes(&token_rarity), 
+                bcs::to_bytes(&seed_value),
+            ];
+            let property_types = vector[
+                string::utf8(b"String"),
+                string::utf8(b"u256")
+            ];
+            token_minted_id = token::mutate_one_token(
+                &collection_signer,
+                signer::address_of(&collection_signer),
+                token_minted_id,
+                property_keys,
+                property_values,
+                property_types,
+            );
+        };
+
+        let (_, _, _, minted_property_version) = token::get_token_id_fields(&token_minted_id);
+        
+        // Transfer to buyer if OPT IN is true
+        if(token::get_direct_transfer(buyer_addr)) {
+            token::transfer(
+                &collection_signer, 
+                token_minted_id,
+                buyer_addr,
+                1 // amount
+            );
+        }
+        // Add to escrow
+        else { 
+            vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
+                creator: lootbox.collection_resource_address,
+                collection: collection_name_str,
+                name: token_name_str,
+                property_version: minted_property_version
+            });
+
+            // Transfer token to buyer escrow resource account
+            token::direct_transfer(
+                &collection_signer,
+                &user_claim_escrow_signer,
+                token_minted_id,
+                1 // amount
+            );
+        };
+
+        // Update whitelist amount at the end of successful purchase
+        if (lootbox.whitelistMode && !lootbox.is_active) {
+            let remaining_amount = *table::borrow(&lootbox.allow_mintList, buyer_addr) - 1;
+            *table::borrow_mut(&mut lootbox.allow_mintList, buyer_addr) = remaining_amount;
+        };
+
+        // Emit direct purchase event
+        event::emit(
+            DirectPurchaseEvent {
+                buyer: buyer_addr,
+                creator: creator_addr,
+                collection_name: collection_name_str,
+                token_name: token_name_str,
+                rarity: token_rarity,
+                price: price,
+                price_coinType: type_info::type_name<CoinType>(),
+                timestamp: timestamp::now_microseconds()
             }
         );
     }
@@ -2285,8 +2626,43 @@ module projectOwnerAdr::crystara_blindbox_v1 {
             vector::remove(avail_tokens, token_index);
         };
     }
+
+    // Helper function to find token index in available tokens vector
+    // Returns (found, index) - if not found, index is 0
+    fun find_token_index_in_avail_tokens(
+        avail_tokens: &vector<String>,
+        token_name: String
+    ): (bool, u64) {
+        let len = vector::length(avail_tokens);
+        let i = 0;
+        while (i < len) {
+            if (*vector::borrow(avail_tokens, i) == token_name) {
+                return (true, i)
+            };
+            i = i + 1;
+        };
+        (false, 0)
+    }
+
+    // Update distribution handler after minting for direct purchase - using token name to find index
+    fun update_distribution_handler_post_mint_by_token_name(
+        handler: &mut LootboxDistributionHandler,
+        rarity: String,
+        token_name: String,
+        lootbox: &Lootbox
+    ) {
+        let avail_tokens = table::borrow_mut(&mut handler.avail_tokens_in_rarity, rarity);
+        let (found, token_index) = find_token_index_in_avail_tokens(avail_tokens, token_name);
         
-    
+        if (found) {
+            let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name);
+            
+            if ( max_supply != 0 && cur_supply >= max_supply ) {
+                // Remove token at exact index
+                vector::remove(avail_tokens, token_index);
+            };
+        };
+    }
 
     // Callback function for VRF
     public entry fun receive_dvrf(
@@ -2705,6 +3081,141 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         // If no tokens found in any rarity, abort
         //assert!(false, error::not_found(ENO_TOKENS_AVAILABLE));
         return string::utf8(b"") // This line will never be reached due to the assert above
+    }
+
+    //Enables or disables blind box minting on a collection
+    public entry fun set_blindbox_minting_toggle<CoinType>(
+        creator: &signer,
+        collection_name: vector<u8>,
+        bool_toggle: bool
+    ) acquires Lootboxes, FixedPriceListing {
+
+        if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
+            assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
+        };
+
+        // Get creator address
+        let creator_addr = signer::address_of(creator);
+        // Get collection name
+        let collection_name_str = string::utf8(collection_name);
+
+        // Get the lootbox
+        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
+        assert!(
+            table::contains(&lootboxes.lootbox_table, collection_name_str),
+            error::not_found(ELOOTBOX_NOTEXISTS)
+        );
+        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
+        
+        // Verify the signer is the creator
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        // Get resource signer
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        internal_set_lootbox_extension_bool(&resource_signer, collection_name_str, string::utf8(EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY), bool_toggle);
+    }
+
+    /// Set the direct purchase price for a specific rarity
+    /// This price is used when blindbox_minting_toggle is false (direct purchase mode)
+    /// The price is stored as an extension with key "fixedprice-{rarity}"
+    public entry fun set_rarity_direct_price(
+        creator: &signer,
+        collection_name: vector<u8>,
+        rarity: vector<u8>,
+        price: u64
+    ) acquires Lootboxes, LootboxExtensions {
+        let creator_addr = signer::address_of(creator);
+        let collection_name_str = string::utf8(collection_name);
+        let rarity_str = string::utf8(rarity);
+
+        // Get the lootbox and verify ownership
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        assert!(
+            table::contains(&lootboxes.lootbox_table, collection_name_str),
+            error::not_found(ELOOTBOX_NOTEXISTS)
+        );
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        // Verify rarity exists in the lootbox
+        assert!(table::contains(&lootbox.rarities, rarity_str), error::not_found(ERARITY_NOTEXISTS));
+
+        // Get resource signer
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        // Build the extension key: "fixedprice-{rarity}"
+        let price_key = string::utf8(EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX);
+        string::append(&mut price_key, rarity_str);
+
+        // Store the price as u64 extension
+        internal_set_lootbox_extension_u64(&resource_signer, collection_name_str, price_key, price);
+
+        // Emit event
+        event::emit(
+            RarityDirectPriceSetEvent {
+                creator: creator_addr,
+                collection_name: collection_name_str,
+                rarity: rarity_str,
+                price: price,
+                timestamp: timestamp::now_microseconds()
+            }
+        );
+    }
+
+    /// Set direct purchase prices for multiple rarities at once
+    public entry fun set_rarity_direct_prices_batch(
+        creator: &signer,
+        collection_name: vector<u8>,
+        rarities: vector<vector<u8>>,
+        prices: vector<u64>
+    ) acquires Lootboxes, LootboxExtensions {
+        let len = vector::length(&rarities);
+        assert!(len == vector::length(&prices), error::invalid_argument(EINVALID_INPUT_LENGTHS));
+
+        let creator_addr = signer::address_of(creator);
+        let collection_name_str = string::utf8(collection_name);
+
+        // Get the lootbox and verify ownership
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        assert!(
+            table::contains(&lootboxes.lootbox_table, collection_name_str),
+            error::not_found(ELOOTBOX_NOTEXISTS)
+        );
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name_str);
+        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
+
+        // Get resource signer
+        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
+
+        let i = 0;
+        while (i < len) {
+            let rarity_str = string::utf8(*vector::borrow(&rarities, i));
+            let price = *vector::borrow(&prices, i);
+
+            // Verify rarity exists in the lootbox
+            assert!(table::contains(&lootbox.rarities, rarity_str), error::not_found(ERARITY_NOTEXISTS));
+
+            // Build the extension key: "fixedprice-{rarity}"
+            let price_key = string::utf8(EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX);
+            string::append(&mut price_key, rarity_str);
+
+            // Store the price as u64 extension
+            internal_set_lootbox_extension_u64(&resource_signer, collection_name_str, price_key, price);
+
+            // Emit event
+            event::emit(
+                RarityDirectPriceSetEvent {
+                    creator: creator_addr,
+                    collection_name: collection_name_str,
+                    rarity: rarity_str,
+                    price: price,
+                    timestamp: timestamp::now_microseconds()
+                }
+            );
+
+            i = i + 1;
+        };
     }
 
     public entry fun set_lootbox_price<CoinType>(
@@ -3135,6 +3646,138 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let lootboxes = borrow_global<Lootboxes>(creator_addr);
         let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
         lootbox.maxRolls
+    }
+
+    /// Get the direct purchase price for a specific rarity
+    /// Returns Option<u64> - None if no price is set for this rarity
+    #[view]
+    public fun get_rarity_direct_price(
+        creator_addr: address,
+        collection_name: String,
+        rarity: String
+    ): Option<u64> acquires Lootboxes, LootboxExtensions {
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        // Build the extension key: "fixedprice-{rarity}"
+        let price_key = string::utf8(EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX);
+        string::append(&mut price_key, rarity);
+        
+        get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, price_key)
+    }
+
+    /// Get direct purchase prices for all rarities in a collection
+    /// Returns (vector<String>, vector<Option<u64>>) - rarity names and their prices
+    #[view]
+    public fun get_all_rarity_direct_prices(
+        creator_addr: address,
+        collection_name: String
+    ): (vector<String>, vector<Option<u64>>) acquires Lootboxes, LootboxExtensions {
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        let rarity_names = lootbox.rarity_keys;
+        let prices = vector::empty<Option<u64>>();
+        
+        let i = 0;
+        let len = vector::length(&rarity_names);
+        while (i < len) {
+            let rarity = *vector::borrow(&rarity_names, i);
+            
+            // Build the extension key: "fixedprice-{rarity}"
+            let price_key = string::utf8(EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX);
+            string::append(&mut price_key, rarity);
+            
+            let price = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, price_key);
+            vector::push_back(&mut prices, price);
+            
+            i = i + 1;
+        };
+        
+        (rarity_names, prices)
+    }
+
+    /// Check if direct purchase is enabled for a collection (blindbox minting is disabled)
+    #[view]
+    public fun is_direct_purchase_enabled(
+        creator_addr: address,
+        collection_name: String
+    ): bool acquires Lootboxes, LootboxExtensions {
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        let blindbox_toggle = get_lootbox_extension_bool(
+            lootbox.collection_resource_address, 
+            collection_name, 
+            string::utf8(EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY)
+        );
+        
+        // Direct purchase is enabled when blindbox_minting_toggle is explicitly false
+        blindbox_toggle == option::some(false)
+    }
+
+    /// Get the token rarity from the lootbox's token_rarity_mapping
+    #[view]
+    public fun get_token_rarity(
+        creator_addr: address,
+        collection_name: String,
+        token_name: String
+    ): Option<String> acquires Lootboxes {
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        if (table::contains(&lootbox.token_rarity_mapping, token_name)) {
+            option::some(*table::borrow(&lootbox.token_rarity_mapping, token_name))
+        } else {
+            option::none()
+        }
+    }
+
+    /// Check if a specific token is available for direct purchase
+    #[view]
+    public fun is_token_available_for_direct_purchase(
+        creator_addr: address,
+        collection_name: String,
+        token_name: String
+    ): bool acquires Lootboxes, LootboxExtensions, LootboxDistributionHandlers {
+        let lootboxes = borrow_global<Lootboxes>(creator_addr);
+        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
+        
+        // Check if token exists in lootbox
+        if (!table::contains(&lootbox.token_rarity_mapping, token_name)) {
+            return false
+        };
+        
+        let token_rarity = *table::borrow(&lootbox.token_rarity_mapping, token_name);
+        
+        // Check if distribution is upgraded
+        if (is_distribution_upgraded(lootbox)) {
+            if (!exists<LootboxDistributionHandlers>(creator_addr)) {
+                return false
+            };
+            
+            let handlers = borrow_global<LootboxDistributionHandlers>(creator_addr);
+            if (!table::contains(&handlers.distribution_handlers, collection_name)) {
+                return false
+            };
+            
+            let handler = table::borrow(&handlers.distribution_handlers, collection_name);
+            
+            if (!table::contains(&handler.avail_tokens_in_rarity, token_rarity)) {
+                return false
+            };
+            
+            let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, token_rarity);
+            let (found, _) = find_token_index_in_avail_tokens(avail_tokens, token_name);
+            return found
+        } else {
+            // For non-upgraded distribution, check token supply
+            let (cur_supply, max_supply) = get_token_supply_and_maximum(lootbox, token_name);
+            if (max_supply == 0) {
+                return true // Unlimited supply
+            };
+            cur_supply < max_supply
+        }
     }
 
     public entry fun add_tokens_to_lootbox(
