@@ -5,7 +5,7 @@ authors = []
 
 [addresses]
 projectOwnerAdr = "0xfd566b048d7ea241ebd4d28a3d60a9eaaaa29a718dfff52f2ff4ca8581363b85"
-supra_addr="0x9672d46410f540b47d7e1f732640c776fa91ea1b909f871b9b2b7527b0ea90ae"
+supra_addr="0x186ba2ba88f4a14ca51f6ce42702c7ebdf6bfcf738d897cc98b986ded6f1219e"
 v1_resource_addr="0xc8d06bf8e30809b45a9ef40d8b0246bc2a44e71be309259db40a2587b74721af"
 
 [dev-addresses]
