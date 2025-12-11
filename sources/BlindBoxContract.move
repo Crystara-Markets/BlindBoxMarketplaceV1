@@ -1019,91 +1019,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       token_uri: vector<u8>,
       rarity: vector<u8>,
       max_supply: u64
-    ) /*acquires Lootboxes*/ {
-        /*let creator_addr = signer::address_of(creator);
-        let collection_name_str = string::utf8(collection_name);
-
-        // Get the lootbox
-        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-        // Verify the signer is the creator
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
-        let collection_resource_address = lootbox.collection_resource_address;
-        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-
-        // Generate a new token name
-        let token_count = vector::length(&lootbox.tokensInLootbox);
-        let token_name_str = generate_token_name(token_count + 1);
-
-        // Check if token with this name already exists
-        assert!(
-            !token::check_tokendata_exists(collection_resource_address, collection_name_str, token_name_str),
-            error::already_exists(ETOKEN_NAME_ALREADY_EXISTS)
-        );
-        
-        // Verify rarity exists in lootbox configuration
-        let rarity_str = string::utf8(rarity);
-        assert!(
-            table::contains(&lootbox.rarities, rarity_str),
-            error::invalid_argument(EINVALID_RARITY)
-        );
-
-        // Set up token properties including rarity
-        let property_keys = vector[string::utf8(b"rarity")];
-        let property_values = vector[rarity];
-        let property_types = vector[string::utf8(b"String")];
-
-        //Token Mutability Configuration
-         //Max Supply, URI, Royalty, Description, Properties
-        let mutability_settings = vector[false, true, true, true, true];
-        let token_mutability_settings = token::create_token_mutability_config(&mutability_settings);
-
-        // Create token metadata in the collection
-        token::create_tokendata(
-            &collection_resource_signer,
-            collection_name_str,
-            token_name_str,
-            string::utf8(b""),
-            max_supply,
-            string::utf8(token_uri),
-            creator_addr,
-            100,
-            5, //Royalty Percent
-            token_mutability_settings,
-            property_keys, 
-            property_values,
-            property_types,
-        );
-
-
-        // Store token data id only
-        vector::push_back(&mut lootbox.tokensInLootbox, token_name_str);
-        table::add(&mut lootbox.token_rarity_mapping, token_name_str, rarity_str);
-
-        // Preparing Event Data
-        let token_uri_str = string::utf8(token_uri);
-
-        // Emit event
-        event::emit(
-            TokenAddedEvent {
-                creator: creator_addr,
-                collection_name: collection_name_str,
-                token_name: token_name_str,
-                token_uri: token_uri_str,
-                rarity: rarity_str,
-                max_supply,
-                timestamp: timestamp::now_microseconds()
-            }
-        );
-        */
-
-        let _ = creator;
-        let _ = collection_name;
-        let _ = token_uri;
-        let _ = rarity;
-        let _ = max_supply;
-
+    ) {
         assert!(false, error::invalid_argument(EDEPRECATED));
     }
 
@@ -1166,17 +1082,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     collection_name: vector<u8>,
     creator: address,
     rarity: vector<u8>
-  ): vector<String> acquires Lootboxes {
-    let lootboxes = borrow_global<Lootboxes>(creator);
-    let lootbox = table::borrow(&lootboxes.lootbox_table, string::utf8(collection_name));
-
-    //Unused params reduce warnings in a no-op way
-    let _ = lootbox;
-    let _ = rarity;
-
-    let deprecated_vector = vector::empty<String>();
-    vector::push_back(&mut deprecated_vector, string::utf8(b"DEPRECATED"));
-    deprecated_vector
+  ): vector<String> {
+    assert!(false, error::invalid_state(EFUNCTION_DISABLED));
+    vector::empty<String>()
   }
 
   // Helper function to get all tokens of a specific rarity
@@ -1236,16 +1144,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       property_types: vector<String>,
       property_values: vector<vector<u8>>
     ) {
-
-        let _ = creator;
-        let _ = collection_name;
-        let _ = token_name;
-        let _ = new_uri;
-        let _ = new_description;
-        let _ = new_rarity;
-        let _ = property_keys;
-        let _ = property_types;
-        let _ = property_values;
         assert!(false, error::invalid_argument(EFUNCTION_DISABLED));
     }
 
@@ -1541,17 +1439,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
         let permit = &borrow_global<PermitCap>(signer::address_of(&module_resource_signer)).permit;
-
-        /*let nonce = supra_vrf::rng_request(
-            //buyer, //Only works with the blindbox account
-            &module_resource_signer, //awaiting response from VRF team, seems like been approved to use
-            callback_address, 
-            callback_module, 
-            callback_function, 
-            1,  // rng_count 
-            client_seed,
-            1   // num_confirmations
-        );*/
 
         let nonce = supra_vrf::rng_request_v2<ClientExample>(
             permit,
@@ -3900,34 +3787,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         rarity_names: vector<vector<u8>>,
         rarity_weights: vector<u64>,
         show_items_on_roll: vector<bool>
-    ) acquires Lootboxes { 
-        // Check lootbox doesn't already exist if table exists
-        let account_addr = signer::address_of(source_account);
-        let fresh_account = false;
-
-        //Check if Lootboxes Table Exists for Creator, If No, Init Table.
-        if (!exists<Lootboxes>(account_addr)) {
-            fresh_account = true;
-        };
-
-        let lootboxes = borrow_global_mut<Lootboxes>(account_addr);
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, string::utf8(collection_name));
-        assert!(lootbox.creator == account_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        //Unused params reduce warnings in a no-op way
-        let _ = description;
-        let _ = collection_uri;
-        let _ = maximum_supply;
-        let _ = price;
-        let _ = requiresKey;
-        let _ = rarity_names;
-        let _ = rarity_weights;
-        let _ = show_items_on_roll;
-        let _ = keys_collection_name;
-        let _ = keys_collection_description;
-        let _ = keys_collection_url;
-        let _ = fresh_account;
-
+    )  { 
         assert!(false, EDEPRECATED);
     }
 
