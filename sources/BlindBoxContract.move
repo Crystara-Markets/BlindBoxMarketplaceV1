@@ -4431,476 +4431,34 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
     #[view]
-    public fun get_lootbox_info_v1<CoinType>(
-        creator_addr: address,
-        collection_name: String
-    ): (
-        address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, Option<String>, Option<String>, Option<bool>    
-    )  {(
-            creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), option::none<String>(), option::none<String>(), option::none<bool>()
-    )}
+    public fun get_lootbox_info_v1<CoinType>(creator_addr: address,collection_name: String): (address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, Option<String>, Option<String>, Option<bool>    )  {(creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), option::none<String>(), option::none<String>(), option::none<bool>())}
     
 
-        #[view]
+    #[view]
     public fun get_lootbox_info_v2<CoinType>(
         creator_addr: address,
         collection_name: String
-    ): (
-        // Basic lootbox info
-        address, // creator
-        String,  // collection_name
-        String,  // description
-        String,  // collection_uri
-        // Token collection info
-
-        // Status info (from get_lootbox_status)
-        u64,    // time_till_active
-        u64,    // time_till_whitelist
-        bool,   // is_active
-        bool,   // whitelist_mode
-        // Supply and price info
-        u64,    // maxRolls (maxsupply)
-        u64,    // rolled
-        u64,    // stock
-        u64,    // max_stock
-        u64,    // price
-        bool,   // requiresKey
-        // Rarity info (from get_lootbox_rarities)
-        vector<String>, // rarity_names
-        vector<u64>,    // weights
-        vector<bool>,   // show_items
-        vector<String>, // viewReceivableRarities
-        // Extension values
-        String, // url
-        String, // rarity_colors
-        bool    // dynamic_seed_enabled
-    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
-
-        // Called first as they borrow Lootbox
-        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
-        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
-
-        // Get status
-        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
-            get_lootbox_status(creator_addr, collection_name);
-        
-        // Get rarity info
-        let (rarity_names, weights, show_items) = 
-            get_lootbox_rarities(creator_addr, collection_name);
-        
-        // Get supply info
-        let rolled = get_lootbox_rolled(creator_addr, collection_name);
-        
-
-        // Get extension values
-        let url = {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"url")),
-                string::utf8(b"")
-            );
-            value
-        };
-        let rarity_colors = { 
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"rarity_colors")),
-                string::utf8(b"")
-            );
-            value
-        };
-        let dynamic_seed_enabled = {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(b"dynamic_seed_enabled")),
-                false
-            );
-            value
-        };
-
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
-        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
-
-
-        (
-            // Basic lootbox info
-            lootbox.creator,
-            collection_name,
-            lootbox_description,
-            lootbox_uri,
-            // Token collection info
-            // Status info
-            time_till_active,
-            time_till_whitelist,
-            is_active,
-            whitelist_mode,
-            // Supply and price info
-            lootbox.maxRolls,
-            rolled,
-            lootbox.stock,
-            lootbox.maxRolls,
-            price,
-            lootbox.requiresKey,
-            // Rarity info
-            rarity_names,
-            weights,
-            show_items,
-            viewReceivableRarities,
-            // Extension values
-            url,
-            rarity_colors,
-            dynamic_seed_enabled
-        )
-    }
+    ): (address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, String, String, bool) {(
+        creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), string::utf8(b""), string::utf8(b""), false
+    )}
 
     #[view]
     public fun get_lootbox_info_v3<CoinType>(
         creator_addr: address,
         collection_name: String,
         viewer_addr_str: String
-    ): (
-        // Basic lootbox info
-        address, // creator
-        String,  // collection_name
-        String,  // description
-        String,  // collection_uri
-        // Token collection info
-
-        // Status info (from get_lootbox_status)
-        u64,    // time_till_active
-        u64,    // time_till_whitelist
-        bool,   // is_active
-        bool,   // whitelist_mode
-        // Supply and price info
-        u64,    // maxRolls (maxsupply)
-        u64,    // rolled
-        u64,    // stock
-        u64,    // max_stock
-        u64,    // price
-        bool,   // requiresKey
-        // Rarity info (from get_lootbox_rarities)
-        vector<String>, // rarity_names
-        vector<u64>,    // weights
-        vector<bool>,   // show_items
-        vector<String>, // viewReceivableRarities
-        // Extension values
-        String, // url
-        String, // rarity_colors
-        bool,    // dynamic_seed_enabled 
-        bool,    // is max mints enabled
-        u64,     // max mints globally
-        u64,     // mints remaining for viewer
-    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
-
-        // Called first as they borrow Lootbox
-        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
-        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
-
-        // Get status
-        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
-            get_lootbox_status(creator_addr, collection_name);
-        
-        // Get rarity info
-        let (rarity_names, weights, show_items) = 
-            get_lootbox_rarities(creator_addr, collection_name);
-        
-        // Get supply info
-        let rolled = get_lootbox_rolled(creator_addr, collection_name);
-        
-
-        // Get extension values
-        let url = {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"url")),
-                string::utf8(b"")
-            );
-            value
-        };
-        let rarity_colors = { 
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"rarity_colors")),
-                string::utf8(b"")
-            );
-            value
-        };
-        let dynamic_seed_enabled = {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(b"dynamic_seed_enabled")),
-                false
-            );
-            value
-        };
-
-        let is_max_mints_enabled = false;
-        let max_mints_globally = 0;
-        let mints_remaining_for_viewer = 0;
-
-        {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let val_is_max_mints_enabled = option::get_with_default(
-                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
-                false
-            );
-            is_max_mints_enabled = val_is_max_mints_enabled;
-
-            let val_max_mints_globally = option::get_with_default(
-                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
-                0
-            );
-            max_mints_globally = val_max_mints_globally;
-
-            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
-            string::append(&mut max_mints_per_current_wallet_key, viewer_addr_str);
-            let val_mints_by_viewer = option::get_with_default(
-                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, max_mints_per_current_wallet_key),
-                0
-            );
-            if(max_mints_globally >= val_mints_by_viewer) {
-                mints_remaining_for_viewer = max_mints_globally - val_mints_by_viewer;
-            } else {
-                mints_remaining_for_viewer = 0;
-            };
-        };
-
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
-        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
-
-        (
-            // Basic lootbox info
-            lootbox.creator,
-            collection_name,
-            lootbox_description,
-            lootbox_uri,
-            // Token collection info
-            // Status info
-            time_till_active,
-            time_till_whitelist,
-            is_active,
-            whitelist_mode,
-            // Supply and price info
-            lootbox.maxRolls,
-            rolled,
-            lootbox.stock,
-            lootbox.maxRolls,
-            price,
-            lootbox.requiresKey,
-            // Rarity info
-            rarity_names,
-            weights,
-            show_items,
-            viewReceivableRarities,
-            // Extension values
-            url,
-            rarity_colors,
-            dynamic_seed_enabled,
-            is_max_mints_enabled,
-            max_mints_globally,
-            mints_remaining_for_viewer
-        )
-    }
+    ): (address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, String, String, bool, bool, u64, u64) {(
+        creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), string::utf8(b""), string::utf8(b""), false, false, 0, 0
+    )}
 
     #[view]
     public fun get_lootbox_info_v4<CoinType>(
         creator_addr: address,
         collection_name: String,
         viewer_addr_str: String
-    ): (
-        // Basic lootbox info
-        address, // creator
-        String,  // collection_name
-        String,  // description
-        String,  // collection_uri
-        // Token collection info
-
-        // Status info (from get_lootbox_status)
-        u64,    // time_till_active
-        u64,    // time_till_whitelist
-        bool,   // is_active
-        bool,   // whitelist_mode
-        // Supply and price info
-        u64,    // maxRolls (maxsupply)
-        u64,    // rolled
-        u64,    // stock
-        u64,    // max_stock
-        u64,    // price
-        bool,   // requiresKey
-        // Rarity info (from get_lootbox_rarities)
-        vector<String>, // rarity_names
-        vector<u64>,    // weights
-        vector<bool>,   // show_items
-        vector<String>, // viewReceivableRarities
-        // Extension values
-        String, // url
-        String, // rarity_colors
-        bool,    // dynamic_seed_enabled 
-        bool,    // is max mints enabled
-        u64,     // max mints globally
-        u64,     // mints remaining for viewer
-        u64,     // max mints in whitelist phase
-        u64,     // current mints in whitelist phase
-    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
-
-        // Called first as they borrow Lootbox
-        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
-        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
-
-        // Get status
-        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
-            get_lootbox_status(creator_addr, collection_name);
-        
-        // Get rarity info
-        let (rarity_names, weights, show_items) = 
-            get_lootbox_rarities(creator_addr, collection_name);
-        
-        // Get supply info
-        let rolled = get_lootbox_rolled(creator_addr, collection_name);
-        
-
-        // Get extension values
-        let url = {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"url")),
-                string::utf8(b"")
-            );
-            value
-        };
-        let rarity_colors = { 
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_string(lootbox.collection_resource_address, collection_name, string::utf8(b"rarity_colors")),
-                string::utf8(b"")
-            );
-            value
-        };
-        let dynamic_seed_enabled = {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let value = option::get_with_default(
-                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(b"dynamic_seed_enabled")),
-                false
-            );
-            value
-        };
-
-        let is_max_mints_enabled = false;
-        let max_mints_globally = 0;
-        let mints_remaining_for_viewer = 0;
-        let max_mints_in_whitelist_phase = 0;
-        let current_mints_in_whitelist_phase = 0;
-
-
-        {
-            let lootboxes = borrow_global<Lootboxes>(creator_addr);
-            let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-            let val_is_max_mints_enabled = option::get_with_default(
-                &get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
-                false
-            );
-            is_max_mints_enabled = val_is_max_mints_enabled;
-
-            let val_max_mints_globally = option::get_with_default(
-                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_KEY)),
-                0
-            );
-            max_mints_globally = val_max_mints_globally;
-
-            let max_mints_per_current_wallet_key = string::utf8(EXTENSION_MAX_MINTS_KEY); 
-            string::append(&mut max_mints_per_current_wallet_key, viewer_addr_str);
-            let val_mints_by_viewer = option::get_with_default(
-                &get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, max_mints_per_current_wallet_key),
-                0
-            );
-            if(max_mints_globally >= val_mints_by_viewer) {
-                mints_remaining_for_viewer = max_mints_globally - val_mints_by_viewer;
-            } else {
-                mints_remaining_for_viewer = 0;
-            };
-
-            let max_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_MAX_MINTS_IN_WHITELIST_PHASE_KEY));
-            if(max_mints_in_whitelist_phase_extension != option::none()) {
-                max_mints_in_whitelist_phase = *option::borrow(&max_mints_in_whitelist_phase_extension);
-            };
-
-            let current_mints_in_whitelist_phase_extension = get_lootbox_extension_u64(lootbox.collection_resource_address, collection_name, string::utf8(EXTENSION_CURRENT_MINTS_IN_WHITELIST_PHASE_KEY));
-            if(current_mints_in_whitelist_phase_extension != option::none()) {
-                current_mints_in_whitelist_phase = *option::borrow(&current_mints_in_whitelist_phase_extension);
-            };
-        };
-
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
-        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
-
-        (
-            // Basic lootbox info
-            lootbox.creator,
-            collection_name,
-            lootbox_description,
-            lootbox_uri,
-            // Token collection info
-            // Status info
-            time_till_active,
-            time_till_whitelist,
-            is_active,
-            whitelist_mode,
-            // Supply and price info
-            lootbox.maxRolls,
-            rolled,
-            lootbox.stock,
-            lootbox.maxRolls,
-            price,
-            lootbox.requiresKey,
-            // Rarity info
-            rarity_names,
-            weights,
-            show_items,
-            viewReceivableRarities,
-            // Extension values
-            url,
-            rarity_colors,
-            dynamic_seed_enabled,
-            is_max_mints_enabled,
-            max_mints_globally,
-            mints_remaining_for_viewer,
-            max_mints_in_whitelist_phase,
-            current_mints_in_whitelist_phase
-        )
-    }
+    ): (address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, String, String, bool, bool, u64, u64, u64, u64) {(
+        creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), string::utf8(b""), string::utf8(b""), false, false, 0, 0, 0, 0
+    )}
         
 
        #[view]
@@ -5260,162 +4818,49 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_owner: &signer,
         lootbox_name: vector<u8>,
         twitter_url: vector<u8>
-    ) acquires Lootboxes, LootboxExtensions {
-        let owner_addr = signer::address_of(collection_owner);
-        let lootbox_name_str = string::utf8(lootbox_name);
-        
-        // Get the lootbox to access its resource account
-        let lootboxes = borrow_global<Lootboxes>(owner_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
-
-        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        // Create resource signer to set extension
-        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-        
-        // Set the twitter URL in extensions
-        internal_set_lootbox_extension_string(
-            &resource_signer,
-            lootbox_name_str,
-            string::utf8(b"social_twitter"),
-            string::utf8(twitter_url)
-        );
+    )  {
+        assert!(false, error::invalid_state(EFUNCTION_DISABLED));
     }
 
     public entry fun set_lootboxsocial_youtube(
         collection_owner: &signer,
         lootbox_name: vector<u8>,
         youtube_url: vector<u8>
-    ) acquires Lootboxes, LootboxExtensions {
-        let owner_addr = signer::address_of(collection_owner);
-        let lootbox_name_str = string::utf8(lootbox_name);
-        
-        // Get the lootbox to access its resource account
-        let lootboxes = borrow_global<Lootboxes>(owner_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
-
-        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        // Create resource signer to set extension
-        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-        
-        // Set the youtube URL in extensions
-        internal_set_lootbox_extension_string(
-            &resource_signer,
-            lootbox_name_str,
-            string::utf8(b"social_youtube"),
-            string::utf8(youtube_url)
-        );
+    )  {
+        assert!(false, error::invalid_state(EFUNCTION_DISABLED));
     }
+
 
     public entry fun set_lootboxsocial_steam(
         collection_owner: &signer,
         lootbox_name: vector<u8>,
         steam_url: vector<u8>
-    ) acquires Lootboxes, LootboxExtensions {
-        let owner_addr = signer::address_of(collection_owner);
-        let lootbox_name_str = string::utf8(lootbox_name);
-        
-        // Get the lootbox to access its resource account
-        let lootboxes = borrow_global<Lootboxes>(owner_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
-
-        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        // Create resource signer to set extension
-        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-        
-        // Set the steam URL in extensions
-        internal_set_lootbox_extension_string(
-            &resource_signer,
-            lootbox_name_str,
-            string::utf8(b"social_steam"),
-            string::utf8(steam_url)
-        );
+    )  {
+        assert!(false, error::invalid_state(EFUNCTION_DISABLED));
     }
 
     public entry fun set_lootboxsocial_epicgames(
         collection_owner: &signer,
         lootbox_name: vector<u8>,
         epicgames_url: vector<u8>
-    ) acquires Lootboxes, LootboxExtensions {
-        let owner_addr = signer::address_of(collection_owner);
-        let lootbox_name_str = string::utf8(lootbox_name);
-        
-        // Get the lootbox to access its resource account
-        let lootboxes = borrow_global<Lootboxes>(owner_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
-
-        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        // Create resource signer to set extension
-        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-        
-        // Set the epicgames URL in extensions
-        internal_set_lootbox_extension_string(
-            &resource_signer,
-            lootbox_name_str,
-            string::utf8(b"social_epicgames"),
-            string::utf8(epicgames_url)
-        );
+    )  {
+        assert!(false, error::invalid_state(EFUNCTION_DISABLED));
     }
 
     public entry fun set_lootboxsocial_twitch(
         collection_owner: &signer,
         lootbox_name: vector<u8>,
         twitch_url: vector<u8>
-    ) acquires Lootboxes, LootboxExtensions {
-        let owner_addr = signer::address_of(collection_owner);
-        let lootbox_name_str = string::utf8(lootbox_name);
-        
-        // Get the lootbox to access its resource account
-        let lootboxes = borrow_global<Lootboxes>(owner_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
-
-        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        // Create resource signer to set extension
-        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-        
-        // Set the twitch URL in extensions
-        internal_set_lootbox_extension_string(
-            &resource_signer,
-            lootbox_name_str,
-            string::utf8(b"social_twitch"),
-            string::utf8(twitch_url)
-        );
+    )  {
+        assert!(false, error::invalid_state(EFUNCTION_DISABLED));
     }
 
     public entry fun set_lootboxsocial_website(
         collection_owner: &signer,
         lootbox_name: vector<u8>,
         website_url: vector<u8>
-    ) acquires Lootboxes, LootboxExtensions {
-        let owner_addr = signer::address_of(collection_owner);
-        let lootbox_name_str = string::utf8(lootbox_name);
-        
-        // Get the lootbox to access its resource account
-        let lootboxes = borrow_global<Lootboxes>(owner_addr);
-        assert!(table::contains(&lootboxes.lootbox_table, lootbox_name_str), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootbox = table::borrow(&lootboxes.lootbox_table, lootbox_name_str);
-
-        assert!(lootbox.creator == owner_addr, error::permission_denied(ENOT_AUTHORIZED));
-        
-        // Create resource signer to set extension
-        let resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-        
-        // Set the website URL in extensions
-        internal_set_lootbox_extension_string(
-            &resource_signer,
-            lootbox_name_str,
-            string::utf8(b"social_website"),
-            string::utf8(website_url)
-        );
+    )  {
+        assert!(false, error::invalid_state(EFUNCTION_DISABLED));
     }
 
 
