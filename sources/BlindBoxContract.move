@@ -1200,7 +1200,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(vector::length(&lootbox.tokensInLootbox) > 0, error::invalid_state(ELOOTBOX_EMPTY));
 
         let blindbox_minting_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY));
-        assert!(blindbox_minting_toggle == option::some(true), error::invalid_state(EBLINDBOX_MINTING_DISABLED));
+        //If the toggle is true, the blindbox minting is disabled
+        assert!(blindbox_minting_toggle != option::some(true), error::invalid_state(EBLINDBOX_MINTING_DISABLED));
 
         // Check auto-activation time
         let current_time = timestamp::now_microseconds();
@@ -1512,7 +1513,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         // Check that blindbox minting is DISABLED (meaning direct purchase is enabled)
         let blindbox_minting_toggle = get_lootbox_extension_bool(lootbox.collection_resource_address, collection_name_str, string::utf8(EXTENSION_BLINDBOX_MINTING_TOGGLE_KEY));
-        assert!(blindbox_minting_toggle == option::some(false), error::invalid_state(EDIRECT_PURCHASE_DISABLED));
+        assert!(blindbox_minting_toggle == option::some(true), error::invalid_state(EDIRECT_PURCHASE_DISABLED));
 
         // Check auto-activation time
         let current_time = timestamp::now_microseconds();
