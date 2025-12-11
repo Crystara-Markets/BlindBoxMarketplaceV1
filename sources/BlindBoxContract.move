@@ -301,6 +301,14 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         next_nonce: u64,
     }
 
+    // Module identifier
+    struct ClientExample has store {}
+
+    // Resource to store the VRF permit
+    struct PermitCap has key { 
+        permit: SupraVRFPermit<ClientExample> 
+    }
+
     //Structs
     //#[resource_group_member(group = supra_framework::object::ObjectGroup)]
     struct Lootbox has store {
@@ -472,7 +480,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
 
         coin::deposit(signer::address_of(&module_resource_signer), coins);
-        deposit::deposit_fund(&module_resource_signer, amount);
+        deposit::deposit_fund_v2(&module_resource_signer, signer::address_of(&module_resource_signer), amount);
     }
 
     public entry fun deposit_supra_to_vrf_v2(
@@ -484,7 +492,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
 
         supra_account::transfer(user, module_resource_info.signer_address, amount);
-        deposit::deposit_fund(&module_resource_signer, amount);
+        deposit::deposit_fund_v2(&module_resource_signer, signer::address_of(&module_resource_signer), amount);
     }
 
     public entry fun add_contract_to_vrf_whitelist(
@@ -500,7 +508,8 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         //deposit::remove_contract_from_whitelist(&module_resource_signer, @projectOwnerAdr);
-        deposit::add_contract_to_whitelist(&module_resource_signer, @projectOwnerAdr);
+        let permit = deposit::init_vrf_module<ClientExample>(&module_resource_signer); 
+        move_to(&module_resource_signer, PermitCap { permit });
     }
 
 
@@ -1583,7 +1592,7 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         supra_account::deposit_coins(signer::address_of(&module_resource_signer), dvrf_cut_coins);
-        deposit::deposit_fund(&module_resource_signer, dvrf_cut);
+        deposit::deposit_fund_v2(&module_resource_signer, signer::address_of(&module_resource_signer), dvrf_cut);
 
         // Update lootbox state
         lootbox.stock = lootbox.stock - 1;
@@ -1605,11 +1614,21 @@ module projectOwnerAdr::crystara_blindbox_v1 {
         token::opt_in_direct_transfer(buyer, true);
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
-        let nonce = supra_vrf::rng_request(
+        let permit = borrow_global<PermitCap>(signer::address_of(&module_resource_signer)).permit;
+
+        /*let nonce = supra_vrf::rng_request(
             //buyer, //Only works with the blindbox account
             &module_resource_signer, //awaiting response from VRF team, seems like been approved to use
             callback_address, 
             callback_module, 
+            callback_function, 
+            1,  // rng_count 
+            client_seed,
+            1   // num_confirmations
+        );*/
+
+        let nonce = supra_vrf::rng_request_v2(
+            &permit,
             callback_function, 
             1,  // rng_count 
             client_seed,
