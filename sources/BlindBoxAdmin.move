@@ -1,4 +1,4 @@
-module projectOwnerAdr::BlindBoxAdminContract_Crystara_TestV17 {
+module projectOwnerAdr::crystara_admin_blindbox_v1 {
     //Generic Imports
     use std::signer;
     use std::error;

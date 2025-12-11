@@ -1,4 +1,4 @@
-module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
+module projectOwnerAdr::crystara_blindbox_v1 {
     
     //
     // Module Upgrade Notes:
@@ -7,7 +7,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     // - Change the callback module name in purchase_lootbox to "BlindBoxContract_Crystara_TestV(NEW VERSION)"
     // - Update the BlindBoxAdmin Contract to use the new version seed
     //
-
 
     use std::signer;
     use std::vector;
@@ -29,9 +28,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use std::string_utils::{Self};
 
     // Constants
-    const RESOURCE_ACCOUNT_SEED: vector<u8> = b"LOOTBOX_RESOURCE_V17";
-    const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V17";
-    const CALLBACK_MODULE_NAME: vector<u8> = b"BlindBoxContract_Crystara_TestV17";
+    const RESOURCE_ACCOUNT_SEED: vector<u8> = b"LOOTBOX_RESOURCE_V1";
+    const USER_CLAIM_RESOURCE_SEED: vector<u8> = b"USER_CLAIM_RESOURCEV2_V1";
+    const CALLBACK_MODULE_NAME: vector<u8> = b"crystara_blindbox_v1";
 
     const SUPRA_COIN_TYPE: vector<u8> = b"0x1::supra_coin::SupraCoin";
 
@@ -5761,4 +5760,3 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     }
 
 }
-
