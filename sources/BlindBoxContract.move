@@ -310,11 +310,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         permit: SupraVRFPermit<ClientExample> 
     }
 
-    //Structs
-    //#[resource_group_member(group = supra_framework::object::ObjectGroup)]
     struct Lootbox has store {
       creator: address,
-      collectionName: String, // Used to access collection by Creator + CollName in aptos_token::token
+      collectionName: String, 
 
       collection_resource_address: address,
       collection_resource_signer_cap: account::SignerCapability,
@@ -326,7 +324,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       
       stock: u64, //Available stock
       maxRolls: u64, //Maximum Rolls ever
-      rolled: u64, //Amount of this lootbox that has been rolled
+      rolled: u64, 
       
       whitelistMode: bool,
       allow_mintList: table::Table<address, u64>,
@@ -449,7 +447,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let resource_address = account::create_resource_address(&signer::address_of(publisher), resource_account_seed);
         assert!(!account::exists_at(resource_address), error::already_exists(EALREADY_INITIALIZED));
 
-        // Create resource account with a seed
         let (resource_signer, signer_cap) = account::create_resource_account(publisher, resource_account_seed);
         
         // Store signer capability
