@@ -1235,82 +1235,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       property_keys: vector<String>,
       property_types: vector<String>,
       property_values: vector<vector<u8>>
-    ) /*acquires Lootboxes*/ {
-        
-        /*
-        let creator_addr = signer::address_of(creator);
-        let collection_name_str = string::utf8(collection_name);
-        let token_name_str = string::utf8(token_name);
-        
-        // Get the lootbox to verify ownership
-        let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-        let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-        
-        // Verify the signer is the creator
-        assert!(lootbox.creator == creator_addr, error::permission_denied(ENOT_AUTHORIZED));
-
-        let collection_resource_address = lootbox.collection_resource_address;
-        let collection_resource_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-
-        // Get token data id
-        let token_data_id = token::create_token_data_id(
-            collection_resource_address,
-            collection_name_str,
-            token_name_str
-        );
-
-        // If changing rarity, verify the new rarity exists in lootbox configuration
-        if (vector::length(&new_rarity) > 0) {
-            let new_rarity_str = string::utf8(new_rarity);
-            assert!(
-                table::contains(&lootbox.rarities, new_rarity_str),
-                error::invalid_argument(EINVALID_RARITY)
-            );
-
-            // Update rarity property
-            let rarity_keys = vector[string::utf8(b"rarity")];
-            let rarity_values = vector[new_rarity];
-            let rarity_types = vector[string::utf8(b"String")];
-
-            token::mutate_tokendata_property(
-                &collection_resource_signer,
-                token_data_id,
-                rarity_keys,
-                rarity_values,
-                rarity_types,
-            );
-        };
-
-        // Modify URI if provided
-        if (vector::length(&new_uri) > 0) {
-            token::mutate_tokendata_uri(
-                &collection_resource_signer,
-                token_data_id,
-                string::utf8(new_uri)
-            );
-        };
-
-        // Modify description if provided
-        if (vector::length(&new_description) > 0) {
-            token::mutate_tokendata_description(
-                &collection_resource_signer,
-                token_data_id,
-                string::utf8(new_description)
-            );
-        };
-
-        // Modify other properties if provided
-        if (vector::length(&property_keys) > 0) {
-            token::mutate_tokendata_property(
-                &collection_resource_signer,
-                token_data_id,
-                property_keys,
-                property_values,
-                property_types,
-            );
-        };
-
-        */
+    ) {
 
         let _ = creator;
         let _ = collection_name;
@@ -2890,43 +2815,6 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );
 
     }
-
-    // Helper function to select rarity based on weights
-    /*fun select_rarity(lootbox: &Lootbox, random_num: u256): String {
-        let total_weight = (0 as u256);
-        let rarities = &lootbox.rarities;
-        
-        let len = vector::length(&lootbox.rarity_keys);
-        assert!(len > 0, error::invalid_state(EINVALID_VECTOR_LENGTH));
-        
-        // Calculate total weight
-        let i = 0;
-        while (i < len) {
-            let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let weight = *table::borrow(rarities, *rarity);
-            total_weight = total_weight + (weight as u256);
-            i = i + 1;
-        };
-        
-        // Use random number to select rarity
-        let roll = random_num % total_weight;
-        let current_weight = (0 as u256);
-        
-        i = 0;
-        while (i < len) {
-            let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let weight = *table::borrow(rarities, *rarity);
-            current_weight = current_weight + (weight as u256);
-            
-            if (roll < current_weight) {
-                return *rarity
-            };
-            i = i + 1;
-        };
-
-        // Fallback to last rarity
-        *vector::borrow(&lootbox.rarity_keys, len - 1)
-    }*/
 
     #[view]
     public fun view_verify_selected_rarity(
