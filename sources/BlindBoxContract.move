@@ -4436,7 +4436,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         collection_name: String
     ): (
         address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, Option<String>, Option<String>, Option<bool>    
-    ) acquires {(
+    )  {(
             creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), option::none<String>(), option::none<String>(), option::none<bool>()
     )}
     
