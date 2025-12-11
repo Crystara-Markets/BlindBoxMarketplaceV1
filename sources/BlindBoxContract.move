@@ -1353,7 +1353,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         buyer: &signer,
         creator_addr: address,
         collection_name: vector<u8>,
-      ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
+      ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers, PermitCap {
 
         // Check if coin type is SupraCoin
         if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
@@ -1615,7 +1615,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         token::opt_in_direct_transfer(buyer, true);
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
-        let permit = borrow_global<PermitCap>(signer::address_of(&module_resource_signer)).permit;
+        let permit = &borrow_global<PermitCap>(signer::address_of(&module_resource_signer)).permit;
 
         /*let nonce = supra_vrf::rng_request(
             //buyer, //Only works with the blindbox account
@@ -1629,7 +1629,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         );*/
 
         let nonce = supra_vrf::rng_request_v2<ClientExample>(
-            &permit,
+            permit,
             callback_function, 
             1,  // rng_count 
             client_seed,
@@ -3108,7 +3108,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator: &signer,
         collection_name: vector<u8>,
         bool_toggle: bool
-    ) acquires Lootboxes, FixedPriceListing {
+    ) acquires Lootboxes, LootboxExtensions {
 
         if(type_info::type_name<CoinType>() != string::utf8(SUPRA_COIN_TYPE)) {
             assert!(false, error::invalid_argument(EINVALID_COIN_TYPE));
