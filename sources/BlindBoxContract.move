@@ -24,7 +24,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     use supra_framework::timestamp;
     //DVRF
     use supra_addr::supra_vrf;
-    use supra_addr::deposit;
+    use supra_addr::deposit::{Self, SupraVRFPermit}; 
     use std::bcs;
     use std::string_utils::{Self};
 
@@ -1628,7 +1628,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             1   // num_confirmations
         );*/
 
-        let nonce = supra_vrf::rng_request_v2(
+        let nonce = supra_vrf::rng_request_v2<ClientExample>(
             &permit,
             callback_function, 
             1,  // rng_count 
