@@ -1,5 +1,5 @@
 [package]
-name = "Crystara_Mainnet_BlindBox_v1"
+name = "Crystara_TestV17"
 version = "1.0.0"
 authors = []
 
@@ -21,7 +21,7 @@ rev = "dev"
 subdir = "aptos-move/framework/aptos-token"
 
 [dependencies]
-SupraVrf = { git = "https://github.com/Entropy-Foundation/vrf-interface", subdir = "supra/mainnet", rev = "master"  }           
+SupraVrf = { git = "https://github.com/Entropy-Foundation/vrf-interface", subdir = "supra/testnet", rev = "testnet"  }           
 
 #[dependencies]
 #SupraVrf = { local = "sources/supra-vrf/testnet"  }
