@@ -1329,7 +1329,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
       creator_addr: address,
       collection_name: vector<u8>,
       quantity: u64
-    ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers {
+    ) acquires FixedPriceListing, Lootboxes, PendingRewards, ResourceInfo, LootboxExtensions, LootboxDistributionHandlers, PermitCap {
         
         let overflow = 100;
         let iter = 0;
