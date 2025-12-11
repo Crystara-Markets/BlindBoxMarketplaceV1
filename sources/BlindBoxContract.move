@@ -4435,94 +4435,11 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         creator_addr: address,
         collection_name: String
     ): (
-        // Basic lootbox info
-        address, // creator 0
-        String,  // collection_name 1
-        String,  // description 2
-        String,  // collection_uri 3
-        // Token collection info
-
-        // Status info (from get_lootbox_status)
-        u64,    // time_till_active 4
-        u64,    // time_till_whitelist 5
-        bool,   // is_active 6
-        bool,   // whitelist_mode 7
-        // Supply and price info
-        u64,    // maxRolls (maxsupply) 8
-        u64,    // rolled 9
-        u64,    // stock 10
-        u64,    // max_stock 11
-        u64,    // price 12
-        bool,   // requiresKey 13
-        // Rarity info (from get_lootbox_rarities)
-        vector<String>, // rarity_names 14
-        vector<u64>,    // weights 15
-        vector<bool>,   // show_items 16
-        vector<String>, // viewReceivableRarities 17
-        // Extension values
-        Option<String>, // url 18
-        Option<String>, // rarity_colors 19
-        Option<bool>    // dynamic_seed_enabled 20
-    ) acquires Lootboxes, FixedPriceListing, LootboxExtensions, LootboxDistributionHandlers {
-
-        // Called first as they borrow Lootbox
-        let price = get_lootbox_price<CoinType>(creator_addr, collection_name);
-        let viewReceivableRarities = view_receivable_rarities(creator_addr, collection_name);
-
-        // Get status
-        let (time_till_active, time_till_whitelist, is_active, whitelist_mode) = 
-            get_lootbox_status(creator_addr, collection_name);
-        
-        // Get rarity info
-        let (rarity_names, weights, show_items) = 
-            get_lootbox_rarities(creator_addr, collection_name);
-        
-        // Get supply info
-        let rolled = get_lootbox_rolled(creator_addr, collection_name);
-        
-        // Get extension values
-        let url = get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"url"));
-        let rarity_colors = get_lootbox_extension_string(creator_addr, collection_name, string::utf8(b"rarity_colors"));
-        let dynamic_seed_enabled = get_lootbox_extension_bool(creator_addr, collection_name, string::utf8(b"dynamic_seed_enabled"));
-
-        assert!(exists<Lootboxes>(creator_addr), error::not_found(ELOOTBOX_NOTEXISTS));
-        let lootboxes = borrow_global<Lootboxes>(creator_addr);
-        let lootbox = table::borrow(&lootboxes.lootbox_table, collection_name);
-
-        let lootbox_description = token::get_collection_description(lootbox.collection_resource_address, collection_name);
-        let lootbox_uri = token::get_collection_uri(lootbox.collection_resource_address, collection_name);
-
-
-        (
-            // Basic lootbox info
-            lootbox.creator,
-            collection_name,
-            lootbox_description,
-            lootbox_uri,
-            // Token collection info
-            // Status info
-            time_till_active,
-            time_till_whitelist,
-            is_active,
-            whitelist_mode,
-            // Supply and price info
-            lootbox.maxRolls,
-            rolled,
-            lootbox.stock,
-            lootbox.maxRolls,
-            price,
-            lootbox.requiresKey,
-            // Rarity info
-            rarity_names,
-            weights,
-            show_items,
-            viewReceivableRarities,
-            // Extension values
-            url,
-            rarity_colors,
-            dynamic_seed_enabled
-        )
-    }
+        address, String, String, String, u64, u64, bool, bool, u64, u64, u64, u64, u64, bool, vector<String>, vector<u64>, vector<bool>, vector<String>, Option<String>, Option<String>, Option<bool>    
+    ) acquires {(
+            creator_addr, collection_name, string::utf8(b""), string::utf8(b""), 0, 0, false, false, 0, 0, 0, 0, 0, false, vector::empty<String>(), vector::empty<u64>(), vector::empty<bool>(), vector::empty<String>(), option::none<String>(), option::none<String>(), option::none<bool>()
+    )}
+    
 
         #[view]
     public fun get_lootbox_info_v2<CoinType>(
