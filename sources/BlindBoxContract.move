@@ -1415,7 +1415,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         supra_account::deposit_coins(signer::address_of(&module_resource_signer), dvrf_cut_coins);
-        deposit::deposit_fund_v2(&module_resource_signer, signer::address_of(&module_resource_signer), dvrf_cut);
+        deposit::deposit_fund_v2(&module_resource_signer, @projectOwnerAdr, dvrf_cut);
 
         // Update lootbox state
         lootbox.stock = lootbox.stock - 1;
