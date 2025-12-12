@@ -1437,10 +1437,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         token::opt_in_direct_transfer(buyer, true);
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
-        let permit = &borrow_global<PermitCap>(@projectOwnerAdr).permit;
 
         let nonce = supra_vrf::rng_request_v2<ClientExample>(
-            permit,
+            &borrow_global<PermitCap>(@projectOwnerAdr).permit,
             callback_function, 
             1,  // rng_count 
             client_seed,
