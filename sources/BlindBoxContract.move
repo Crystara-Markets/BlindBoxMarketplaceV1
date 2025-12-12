@@ -507,8 +507,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         //deposit::remove_contract_from_whitelist(&module_resource_signer, @projectOwnerAdr);
         deposit::whitelist_client_address(&module_resource_signer, 10000000);
-        let permit = deposit::init_vrf_module<ClientExample>(&module_resource_signer); 
-        move_to(&module_resource_signer, PermitCap { permit });
+        let permit = deposit::init_vrf_module<ClientExample>(user); 
+        move_to(user, PermitCap { permit });
     }
 
 
@@ -1437,7 +1437,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         token::opt_in_direct_transfer(buyer, true);
 
         let client_seed = timestamp::now_microseconds();  // Use timestamp as seed
-        let permit = &borrow_global<PermitCap>(signer::address_of(&module_resource_signer)).permit;
+        let permit = &borrow_global<PermitCap>(@projectOwnerAdr).permit;
 
         let nonce = supra_vrf::rng_request_v2<ClientExample>(
             permit,
