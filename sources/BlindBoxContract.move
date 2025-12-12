@@ -485,7 +485,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     user: &signer,
     amount: u64
     ) acquires ResourceInfo {
-        assert!((signer::address_of(user) == @projectOwnerAdr || signer::address_of(user) == @v1_resource_addr) , error::permission_denied(ENOT_AUTHORIZED));
+        assert!((signer::address_of(user) == @projectOwnerAdr || signer::address_of(user) == @v17_resource_addr) , error::permission_denied(ENOT_AUTHORIZED));
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
 
@@ -1431,7 +1431,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         
         //debug::print(&b"module resource signer: ");
-        assert!(signer::address_of(&module_resource_signer) == @v1_resource_addr, error::invalid_state(EINVALID_MODULE_RESOURCE_SIGNER));
+        assert!(signer::address_of(&module_resource_signer) == @v17_resource_addr, error::invalid_state(EINVALID_MODULE_RESOURCE_SIGNER));
 
         //Auto Opt In To Direct Transfer for Testnet Purposes
         token::opt_in_direct_transfer(buyer, true);
@@ -2513,7 +2513,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             client_seed
         );
 
-        assert!(caller_address == @v1_resource_addr, error::permission_denied(EINVALID_VRF_CALLER));
+        assert!(caller_address == @v17_resource_addr, error::permission_denied(EINVALID_VRF_CALLER));
 
         // Verify we got at least one random number
         assert!(vector::length(&random_numbers) > 0, error::invalid_argument(EINVALID_VECTOR_LENGTH));
