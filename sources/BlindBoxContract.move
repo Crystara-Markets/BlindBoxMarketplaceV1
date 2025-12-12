@@ -2513,7 +2513,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             client_seed
         );
 
-        assert!(caller_address == @v17_resource_addr, error::permission_denied(EINVALID_VRF_CALLER));
+        assert!(caller_address == @projectOwnerAdr error::permission_denied(EINVALID_VRF_CALLER));
 
         // Verify we got at least one random number
         assert!(vector::length(&random_numbers) > 0, error::invalid_argument(EINVALID_VECTOR_LENGTH));
