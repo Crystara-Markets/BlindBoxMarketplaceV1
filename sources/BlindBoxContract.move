@@ -506,7 +506,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let module_resource_info = borrow_global<ResourceInfo>(@projectOwnerAdr);
         let module_resource_signer = account::create_signer_with_capability(&module_resource_info.signer_cap);
         //deposit::remove_contract_from_whitelist(&module_resource_signer, @projectOwnerAdr);
-        //deposit::whitelist_client_address(&module_resource_signer, 10000000);
+        deposit::whitelist_client_address(user, 10000000);
         let permit = deposit::init_vrf_module<ClientExample>(user); 
         move_to(user, PermitCap { permit });
     }
