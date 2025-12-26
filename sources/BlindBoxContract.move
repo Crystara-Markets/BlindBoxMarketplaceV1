@@ -1851,195 +1851,10 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         (string::utf8(b"DEPRECATED"), string::utf8(b"DEPRECATED"), 0)
     }
 
-    //DO NOT RELEASE TO MAINNET
-    public entry fun module_owner_force_dvrf_distribution(
-        signer: &signer,
-        creator_addr: address,
-        collection_name: vector<u8>,
-        random_num: u256,
-        buyer: address
-    ) acquires  Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
-
-            assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
-
-            let random_numbers = vector[];
-            vector::push_back(&mut random_numbers, random_num);
-
-            // Emit VRF callback event
-            event::emit(
-                VRFCallbackReceivedEvent {
-                    nonce: 0,
-                    caller_address: signer::address_of(signer),
-                    random_numbers: random_numbers,
-                    timestamp: timestamp::now_microseconds()
-                }
-            );
-
-            // Get lootbox
-            let lootboxes = borrow_global_mut<Lootboxes>(creator_addr);
-            let collection_name_str = string::utf8(collection_name);
-            let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
-            
-            let selected_rarity = string::utf8(b"");    
-            let selected_token = string::utf8(b"");
-            let token_index = 0;
-
-            let _ = selected_rarity;
-            let _ = selected_token;
-
-            //New distribution logic
-            if(is_distribution_upgraded(lootbox)) {
-                let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
-                let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
-                (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
-            }
-            //Old distribution logic
-            else {
-                selected_rarity = select_rarity(lootbox, random_num);
-
-                // Get tokens of that rarity
-                let token_count = get_rarity_token_count(lootbox, selected_rarity);
-                if (token_count == 0) {
-                    emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
-                    return
-                };
-
-                // Get tokens of that rarity
-                let tokens_of_rarity = get_tokens_by_rarity(lootbox, selected_rarity);
-
-                // Unused params reduce warnings in a no-op way
-                let _ = tokens_of_rarity;
-            
-                // Verify we have tokens to select from
-                let len = vector::length(&tokens_of_rarity);
-                if (len == 0) {
-                    emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
-                    return
-                };
-                
-                // Safe conversion: len is guaranteed to fit in u256
-                let len_u256 = (len as u256);
-                
-                // Calculate token index using full u256 randomness
-                let token_index = random_num % len_u256;
-                
-                // Safe conversion back to u64: guaranteed to be less than len
-                let token_index_u64 = (token_index as u64);
-                assert!(token_index_u64 < len, error::invalid_state(EUNSAFE_NUMBER_CONVERSION));
-                
-                selected_token = *vector::borrow(&tokens_of_rarity, token_index_u64);
-            };
-
-            if (selected_rarity == string::utf8(b"") || selected_token == string::utf8(b"")) {
-                // Emit event that no token was found
-                emit_no_token_event(0, buyer, creator_addr, collection_name_str, selected_rarity, random_num);
-                return
-            };
-
-            // Get collection signer
-            let collection_signer = account::create_signer_with_capability(&lootbox.collection_resource_signer_cap);
-
-            // Create token data id
-            let token_data_id = token::create_token_data_id(
-                lootbox.collection_resource_address,
-                string::utf8(collection_name),
-                selected_token
-            );
-
-            let user_claim_seed = USER_CLAIM_RESOURCE_SEED;
-            let user_claim_resource_address = account::create_resource_address(&buyer, user_claim_seed);
-            // If user claim resource account doesn't exist, create it
-            assert!(account::exists_at(user_claim_resource_address), error::not_found(ERESOURCE_ESCROW_CLAIM_ACCOUNT_NOT_EXISTS)); 
-            // Get the resource account signer using stored capability
-            let claim_info = borrow_global_mut<UserClaimResourceInfoV2>(user_claim_resource_address);
-            let user_claim_escrow_signer = account::create_signer_with_capability(&claim_info.resource_signer_cap);
 
 
-            // Mint token into collection owner resource account
-            let token_minted_id = token::mint_token(
-                &collection_signer,
-                token_data_id,
-                1  // amount
-            );
-
-            if(is_distribution_upgraded(lootbox)) {
-                let handlers = borrow_global_mut<LootboxDistributionHandlers>(creator_addr);
-                let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
-                update_distribution_handler_post_mint(handler, selected_rarity, token_index, lootbox);
-            };
-
-            // Upgrading SFT/NFT to NFT based on Random Seed
-            let dynamic_seed = get_lootbox_extension_bool(lootbox.collection_resource_address, string::utf8(collection_name), string::utf8(b"dynamic_seed_enabled"));
-
-            
-            if (dynamic_seed == option::some(true)) {
-                let property_keys = vector[
-                    string::utf8(b"rarity"),
-                    string::utf8(b"seed"),
-                    ];
-                let property_values = vector[
-                    bcs::to_bytes(&selected_rarity), 
-                    bcs::to_bytes(&random_num),
-                    ];
-                let property_types = vector[
-                    string::utf8(b"String"),
-                    string::utf8(b"u256")
-                    ];
-                token_minted_id = token::mutate_one_token(
-                    &collection_signer,
-                    signer::address_of(&collection_signer),
-                    token_minted_id,
-                    property_keys,
-                    property_values,
-                    property_types,
-                );
-            };
-
-            //return values are public fun get_token_id_fields(token_id: &TokenId): (address, String, String, u64) {
-            let (_, _, _, minted_property_version) = token::get_token_id_fields(&token_minted_id);
-            
-            //Transfer to buyer if OPT IN is true
-            if(token::get_direct_transfer(buyer)) {
-                token::transfer(
-                    &collection_signer, 
-                    token_minted_id,
-                    buyer,
-                    1 //amount
-                );
-            }
-            //Add to escrow
-            else { 
-                vector::push_back(&mut claim_info.claimable_tokens, TokenIdentifierV2 {
-                    creator: lootbox.collection_resource_address,
-                    collection: string::utf8(collection_name),
-                    name: selected_token,
-                    property_version: minted_property_version
-                });
-
-                // Transfer token to buyer escrow resource account
-                token::direct_transfer(
-                    &collection_signer,
-                    &user_claim_escrow_signer,
-                    token_minted_id,
-                    1 //amount
-                );
-            };
-
-
-            // Emit distribution event
-            event::emit(
-                LootboxRewardDistributedEvent {
-                    nonce: 0,
-                    buyer: buyer,
-                    creator: creator_addr,
-                    collection_name: string::utf8(collection_name),
-                    selected_token: selected_token,
-                    selected_rarity: selected_rarity,
-                    random_number: random_num,
-                    timestamp: timestamp::now_microseconds()
-                }
-            );
-        }
+    //Deprecated
+    public entry fun module_owner_force_dvrf_distribution(signer: &signer,creator_addr: address,collection_name: vector<u8>,random_num: u256,buyer: address){}
 
     // Helper function to get token count for a rarity without loading all tokens
     fun get_rarity_token_count(lootbox: &Lootbox, rarity: String): u64 {
@@ -2494,6 +2309,21 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
     }
 
+    public entry fun distribute_latent_nonce( 
+        signer: &signer,
+        creator_addr: address,
+        collection_name: vector<u8>,
+        random_num: u256, 
+        nonce: u64,
+        buyer: address
+    ) acquires Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
+        assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
+
+        let random_numbers = vector::empty<u256>();
+        random_numbers.push_back(random_num);
+        distribute_random_reward(nonce, message, signature, caller_address, rng_count, client_seed, random_numbers);
+    }
+
     // Callback function for VRF
     public entry fun receive_dvrf(
       nonce: u64,
@@ -2512,13 +2342,24 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             rng_count, 
             client_seed
         );
-
+        //Ensure that the caller is the project owner
         assert!(caller_address == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
-
         // Verify we got at least one random number
         assert!(vector::length(&random_numbers) > 0, error::invalid_argument(EINVALID_VECTOR_LENGTH));
 
-        // Emit VRF callback event
+        distribute_random_reward(nonce, message, signature, caller_address, rng_count, client_seed, random_numbers);
+    }
+    
+    fun distribute_random_reward( 
+        nonce: u64,
+        message: vector<u8>,
+        signature: vector<u8>,
+        caller_address: address,
+        rng_count: u8,
+        client_seed: u64,
+        random_numbers: vector<u256>,
+    ) acquires Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
+         // Emit VRF callback event
         event::emit(
             VRFCallbackReceivedEvent {
                 nonce,
@@ -2698,7 +2539,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
                 timestamp: timestamp::now_microseconds()
             }
         );
-
+        
     }
 
     #[view]
