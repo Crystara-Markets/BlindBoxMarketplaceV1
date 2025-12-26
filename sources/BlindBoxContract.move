@@ -2111,7 +2111,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            if(table::contains(rarities, *rarity)) {
+            if(has_at_least_one_available_token_in_rarity(lootbox, handler, *rarity)) {
                 let weight = *table::borrow(rarities, *rarity);
                 total_weight = total_weight + (weight as u256);
                 
@@ -2149,7 +2149,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let selected_rarity = string::utf8(b"");
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            if(table::contains(rarities, *rarity)) {
+            if(has_at_least_one_available_token_in_rarity(lootbox, handler, *rarity)) {
                 let weight = *table::borrow(rarities, *rarity);
                 current_weight = current_weight + (weight as u256);
                 
@@ -2189,7 +2189,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             while (i >= 0) {
                 let rarity = *vector::borrow(&sorted_rarities, i);
                 let weight = *vector::borrow(&sorted_weights, i); 
-                if(table::contains(rarities, selected_rarity)) {
+                if(has_at_least_one_available_token_in_rarity(lootbox, handler, selected_rarity)) {
                     if (weight >= *table::borrow(rarities, selected_rarity)) {
                         let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
                         let avail_len = vector::length(avail_tokens);
@@ -2224,7 +2224,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             while (i < len) {
                 let rarity = *vector::borrow(&sorted_rarities, i);
                 let weight = *vector::borrow(&sorted_weights, i);
-                if(table::contains(rarities, selected_rarity)) {
+                if(has_at_least_one_available_token_in_rarity(lootbox, handler, selected_rarity)) {
                     if (weight <= *table::borrow(rarities, selected_rarity)) {
                         let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
                         let avail_len = vector::length(avail_tokens);
@@ -2243,6 +2243,18 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         // If no tokens found in any rarity
         (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), 0)
+    }
+
+    fun has_at_least_one_available_token_in_rarity()
+        lootbox: &Lootbox,
+        handler: &LootboxDistributionHandler,
+        rarity: String
+    ): bool {
+        if(!table::contains(&handler.avail_tokens_in_rarity, rarity)) {
+            return false
+        };
+        let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+        vector::length(avail_tokens) > 0
     }
     
     fun has_at_least_one_available_token(
