@@ -2320,7 +2320,12 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
 
         let random_numbers = vector::empty<u256>();
-        random_numbers.push_back(random_num);
+        vector::push_back(&mut random_numbers, random_num); 
+        let message = vector::empty<u8>();
+        let signature = vector::empty<u8>();
+        let caller_address = signer::address_of(signer);
+        let rng_count = 1;
+        let client_seed = timestamp::now_microseconds();
         distribute_random_reward(nonce, message, signature, caller_address, rng_count, client_seed, random_numbers);
     }
 
