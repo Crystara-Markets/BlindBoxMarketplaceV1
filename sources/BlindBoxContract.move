@@ -114,6 +114,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
     const ETOKEN_NOT_IN_LOOTBOX: u64 = 62;
     const ETOKEN_NOT_AVAILABLE: u64 = 63;
     const ETOKEN_SOLD_OUT: u64 = 64;
+    const ENO_COLLECTION_NOT_FOUND: u64 = 65;
+    const ENO_HANDLER_NOT_FOUND: u64 = 66;
+    const ENO_RARITY_NOT_FOUND: u64 = 67;
 
     // Constants for direct purchase extension keys
     const EXTENSION_DIRECT_PURCHASE_PRICE_PREFIX: vector<u8> = b"fixedprice-";
@@ -2108,24 +2111,26 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let weight = *table::borrow(rarities, *rarity);
-            total_weight = total_weight + (weight as u256);
-            
-            // Insert into sorted vectors
-            let j = 0;
-            let inserted = false;
-            while (j < vector::length(&sorted_weights)) {
-                if (weight >= *vector::borrow(&sorted_weights, j)) {
-                    vector::insert(&mut sorted_weights, j, weight);
-                    vector::insert(&mut sorted_rarities, j, *rarity);
-                    inserted = true;
-                    break
+            if(table::contains(rarities, *rarity)) {
+                let weight = *table::borrow(rarities, *rarity);
+                total_weight = total_weight + (weight as u256);
+                
+                // Insert into sorted vectors
+                let j = 0;
+                let inserted = false;
+                while (j < vector::length(&sorted_weights)) {
+                    if (weight >= *vector::borrow(&sorted_weights, j)) {
+                        vector::insert(&mut sorted_weights, j, weight);
+                        vector::insert(&mut sorted_rarities, j, *rarity);
+                        inserted = true;
+                        break
+                    };
+                    j = j + 1;
                 };
-                j = j + 1;
-            };
-            if (!inserted) {
-                vector::push_back(&mut sorted_weights, weight);
-                vector::push_back(&mut sorted_rarities, *rarity);
+                if (!inserted) {
+                    vector::push_back(&mut sorted_weights, weight);
+                    vector::push_back(&mut sorted_rarities, *rarity);
+                };
             };
             
             i = i + 1;
@@ -2144,12 +2149,14 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         let selected_rarity = string::utf8(b"");
         while (i < len) {
             let rarity = vector::borrow(&lootbox.rarity_keys, i);
-            let weight = *table::borrow(rarities, *rarity);
-            current_weight = current_weight + (weight as u256);
-            
-            if (roll < current_weight) {
-                selected_rarity = *rarity;
-                break
+            if(table::contains(rarities, *rarity)) {
+                let weight = *table::borrow(rarities, *rarity);
+                current_weight = current_weight + (weight as u256);
+                
+                if (roll < current_weight) {
+                    selected_rarity = *rarity;
+                    break
+                };
             };
             i = i + 1;
         };
@@ -2159,6 +2166,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         };
         
         // Check if selected rarity has available tokens and select one if available
+        assert!(table::contains(&handler.avail_tokens_in_rarity, selected_rarity), error::not_found(ENO_RARITY_NOT_FOUND));
         let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, selected_rarity);
         let avail_len = vector::length(avail_tokens);
         if (avail_len > 0) {
@@ -2180,21 +2188,23 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             i = vector::length(&sorted_rarities) - 1;
             while (i >= 0) {
                 let rarity = *vector::borrow(&sorted_rarities, i);
-                let weight = *vector::borrow(&sorted_weights, i);
-                if (weight >= *table::borrow(rarities, selected_rarity)) {
-                    let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
-                    let avail_len = vector::length(avail_tokens);
-                    if (avail_len > 0) {
-                        // Safe conversion: avail_len is guaranteed to fit in u256
-                        let avail_len_u256 = (avail_len as u256);
-                        
-                        // Calculate token index using full u256 randomness
-                        let token_index = random_num % avail_len_u256;
-                        
-                        // Safe conversion back to u64: guaranteed to be less than avail_len
-                        let token_index_u64 = (token_index as u64);
-                        let selected_token = *vector::borrow(avail_tokens, token_index_u64);
-                        return (rarity, selected_token, token_index_u64)
+                let weight = *vector::borrow(&sorted_weights, i); 
+                if(table::contains(rarities, selected_rarity)) {
+                    if (weight >= *table::borrow(rarities, selected_rarity)) {
+                        let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+                        let avail_len = vector::length(avail_tokens);
+                        if (avail_len > 0) {
+                            // Safe conversion: avail_len is guaranteed to fit in u256
+                            let avail_len_u256 = (avail_len as u256);
+                            
+                            // Calculate token index using full u256 randomness
+                            let token_index = random_num % avail_len_u256;
+                            
+                            // Safe conversion back to u64: guaranteed to be less than avail_len
+                            let token_index_u64 = (token_index as u64);
+                            let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+                            return (rarity, selected_token, token_index_u64)
+                        };
                     };
                 };
                 if (i > 0) {
@@ -2214,15 +2224,17 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
             while (i < len) {
                 let rarity = *vector::borrow(&sorted_rarities, i);
                 let weight = *vector::borrow(&sorted_weights, i);
-                if (weight <= *table::borrow(rarities, selected_rarity)) {
-                    let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
-                    let avail_len = vector::length(avail_tokens);
-                    if (avail_len > 0) {
-                        let avail_len_u256 = (avail_len as u256);
-                        let token_index = random_num % avail_len_u256;
-                        let token_index_u64 = (token_index as u64);
-                        let selected_token = *vector::borrow(avail_tokens, token_index_u64);
-                        return (rarity, selected_token, token_index_u64)
+                if(table::contains(rarities, selected_rarity)) {
+                    if (weight <= *table::borrow(rarities, selected_rarity)) {
+                        let avail_tokens = table::borrow(&handler.avail_tokens_in_rarity, rarity);
+                        let avail_len = vector::length(avail_tokens);
+                        if (avail_len > 0) {
+                            let avail_len_u256 = (avail_len as u256);
+                            let token_index = random_num % avail_len_u256;
+                            let token_index_u64 = (token_index as u64);
+                            let selected_token = *vector::borrow(avail_tokens, token_index_u64);
+                            return (rarity, selected_token, token_index_u64)
+                        };
                     };
                 };
                 i = i + 1;
@@ -2385,6 +2397,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
          // Get lootbox
         let lootboxes = borrow_global_mut<Lootboxes>(pending_reward.creator);
         let collection_name_str = pending_reward.collection_name;
+        //Ensure that the collection exists
+        assert!(table::contains(&lootboxes.lootbox_table, collection_name_str), error::not_found(ENO_COLLECTION_NOT_FOUND));
         let lootbox = table::borrow_mut(&mut lootboxes.lootbox_table, collection_name_str);
         
         let selected_rarity = string::utf8(b"");    
@@ -2397,6 +2411,8 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         //New distribution logic
         if(is_distribution_upgraded(lootbox)) {
             let handlers = borrow_global_mut<LootboxDistributionHandlers>(pending_reward.creator);
+            //Ensure that the handler exists
+            assert!(table::contains(&handlers.distribution_handlers, collection_name_str), error::not_found(ENO_HANDLER_NOT_FOUND));
             let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
             (selected_rarity, selected_token, token_index) = select_rarity_and_token_distribution_upgraded(lootbox, random_num, handler);
         }
@@ -2471,6 +2487,9 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
 
         if(is_distribution_upgraded(lootbox)) {
             let handlers = borrow_global_mut<LootboxDistributionHandlers>(pending_reward.creator);
+
+            //Ensure that the handler exists
+            assert!(table::contains(&handlers.distribution_handlers, collection_name_str), error::not_found(ENO_HANDLER_NOT_FOUND));
             let handler = table::borrow_mut(&mut handlers.distribution_handlers, collection_name_str);
             update_distribution_handler_post_mint(handler, selected_rarity, token_index, lootbox);
         };
