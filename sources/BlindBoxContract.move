@@ -2363,7 +2363,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         rng_count: u8,
         client_seed: u64,
         random_numbers: vector<u256>,
-    ) acquires Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
+    ) acquires PendingRewards,Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
          // Emit VRF callback event
         event::emit(
             VRFCallbackReceivedEvent {
