@@ -2316,7 +2316,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         random_num: u256, 
         nonce: u64,
         buyer: address
-    ) acquires Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
+    ) acquires PendingRewards, Lootboxes, UserClaimResourceInfoV2, LootboxExtensions, LootboxDistributionHandlers {
         assert!(signer::address_of(signer) == @projectOwnerAdr, error::permission_denied(EINVALID_VRF_CALLER));
 
         let random_numbers = vector::empty<u256>();
