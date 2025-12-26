@@ -2245,7 +2245,7 @@ module projectOwnerAdr::BlindBoxContract_Crystara_TestV17 {
         (string::utf8(b""), string::utf8(b"CRYSTARA_NO_TOKEN_FOUND"), 0)
     }
 
-    fun has_at_least_one_available_token_in_rarity()
+    fun has_at_least_one_available_token_in_rarity(
         lootbox: &Lootbox,
         handler: &LootboxDistributionHandler,
         rarity: String
